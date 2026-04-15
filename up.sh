@@ -53,7 +53,7 @@ CONTACT_PHONE="${CONTACT_PHONE:-+7 (965) 260-50-32}"
 CONTACT_LOCATION="${CONTACT_LOCATION:-Онлайн, Россия и другие страны}"
 TELEGRAM_URL="${TELEGRAM_URL:-https://t.me/NatalyaBKudinova}"
 MAX_URL="${MAX_URL:-#contacts}"
-CALENDAR_URL="${CALENDAR_URL:-/booking#calendar}"
+CALENDAR_URL="${CALENDAR_URL:-/booking}"
 USD_RATE_URL="${USD_RATE_URL:-https://www.cbr-xml-daily.ru/daily_json.js}"
 
 # =========================
@@ -210,6 +210,12 @@ ensure_user_and_dirs() {
 ensure_env_file() {
   if [[ -f "$ENV_FILE" ]]; then
     info "env file exists: $ENV_FILE"
+    if grep -q '^CALENDAR_URL=/booking#calendar$' "$ENV_FILE"; then
+      info "updating CALENDAR_URL in $ENV_FILE to /booking"
+      sed -i 's|^CALENDAR_URL=/booking#calendar$|CALENDAR_URL=/booking|' "$ENV_FILE"
+    elif ! grep -q '^CALENDAR_URL=' "$ENV_FILE"; then
+      printf '\nCALENDAR_URL=%s\n' "$CALENDAR_URL" >>"$ENV_FILE"
+    fi
     return 0
   fi
 

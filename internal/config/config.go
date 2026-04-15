@@ -39,7 +39,7 @@ func FromEnv() Config {
 		Location:       env("CONTACT_LOCATION", "Онлайн, Россия и другие страны"),
 		TelegramURL:    env("TELEGRAM_URL", "https://t.me/NatalyaBKudinova"),
 		MaxURL:         env("MAX_URL", "#contacts"),
-		CalendarURL:    env("CALENDAR_URL", "/booking#calendar"),
+		CalendarURL:    calendarURL(),
 	}
 }
 
@@ -47,6 +47,14 @@ func env(key, fallback string) string {
 	value := os.Getenv(key)
 	if value == "" {
 		return fallback
+	}
+	return value
+}
+
+func calendarURL() string {
+	value := env("CALENDAR_URL", "/booking")
+	if value == "/booking#calendar" {
+		return "/booking"
 	}
 	return value
 }
