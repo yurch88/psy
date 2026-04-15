@@ -396,7 +396,7 @@ EOF
   ln -sfn "$NGINX_AVAILABLE" "$NGINX_ENABLED"
   rm -f /etc/nginx/sites-enabled/default
   nginx -t
-  systemctl reload nginx
+  systemctl restart nginx
 }
 
 write_nginx_https_config() {
@@ -461,6 +461,29 @@ ensure_firewall() {
   fi
 }
 
+verify_local_http_challenge() {
+  local token challenge_dir challenge_file url body
+
+  token="upsh-$(date +%s)-$RANDOM"
+  challenge_dir="$CERTBOT_WEBROOT/.well-known/acme-challenge"
+  challenge_file="$challenge_dir/$token"
+  url="http://$DOMAIN/.well-known/acme-challenge/$token"
+
+  mkdir -p "$challenge_dir"
+  printf '%s' "$token" >"$challenge_file"
+
+  body="$(curl -fsS --max-time 5 --resolve "$DOMAIN:80:127.0.0.1" "$url" 2>/dev/null || true)"
+  rm -f "$challenge_file" || true
+
+  if [[ "$body" != "$token" ]]; then
+    err "nginx local ACME challenge check failed"
+    err "expected to read token from $url via $CERTBOT_WEBROOT"
+    return 1
+  fi
+
+  info "nginx local ACME challenge check OK"
+}
+
 ensure_certificate() {
   if [[ -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" && -f "/etc/letsencrypt/live/$DOMAIN/privkey.pem" ]]; then
     info "certificate already exists for $DOMAIN"
@@ -472,7 +495,20 @@ ensure_certificate() {
     warn "certbot may fail until A-record points to this server"
   fi
 
-  info "issuing Let's Encrypt certificate for $DOMAIN"
+  verify_local_http_challenge
+
+  info "issuing Let's Encrypt certificate for $DOMAIN with nginx authenticator"
+  if certbot certonly \
+    --nginx \
+    --domain "$DOMAIN" \
+    --email "$CERTBOT_EMAIL" \
+    --agree-tos \
+    --non-interactive \
+    --keep-until-expiring; then
+    return 0
+  fi
+
+  warn "certbot nginx authenticator failed; trying webroot authenticator"
   certbot certonly \
     --webroot \
     --webroot-path "$CERTBOT_WEBROOT" \
