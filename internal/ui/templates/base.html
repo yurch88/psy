@@ -1,0 +1,36 @@
+{{define "base"}}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}}</title>
+  <meta name="description" content="{{.Description}}">
+  <link rel="preload" href="/static/img/hero.jpg" as="image">
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body class="t-body">
+  <a class="skip-link" href="#content">К содержанию</a>
+  <header class="t454 site-header">
+    <nav class="main-nav main-nav-left" aria-label="Левое меню">
+      <a href="/#about">Обо мне</a>
+      <a href="/#pricing">Стоимость</a>
+      <a href="/#contacts">Контакты</a>
+    </nav>
+    <a class="brand t-title" href="/" aria-label="На главную">{{.Site.Brand}}</a>
+    <nav class="main-nav main-nav-right" aria-label="Правое меню">
+      <a href="/rules">Правила</a>
+      <a href="/memo">Памятка</a>
+      <a href="/#faq">Вопросы и ответы</a>
+    </nav>
+  </header>
+
+  <main id="content" class="t-records">
+    {{template "content" .}}
+  </main>
+
+  {{template "footer" .}}
+  <script src="/static/js/app.js" defer></script>
+</body>
+</html>
+{{end}}

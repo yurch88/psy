@@ -1,0 +1,195 @@
+{{define "content"}}
+<section class="r t-rec t-rec_pt_0 t-rec_pb_0 hero-record" aria-label="Приветственный блок">
+  <div class="t-cover" style="--hero-image: url('{{.Site.Home.HeroImage.Src}}');">
+    <div class="t-cover__filter"></div>
+    <div class="t-container">
+      <div class="t-col t-col_12">
+        <div class="t-cover__wrapper t-valign_middle">
+          <div class="t001 t-align_center">
+            <div class="t001__wrapper">
+              <div class="hero-brand">{{.Site.Home.Headline}}</div>
+              <h1 class="t001__title t-title t-title_xl">{{.Site.Home.Subheadline}}</h1>
+              <div class="t001__descr t-descr t-descr_xl">{{.Site.Home.SupportText}}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="r t-rec t-rec_pt_135 t-rec_pb_90 about-record" id="about">
+  <div class="t165">
+    <div class="t-container two-col about-grid">
+      <div class="about-image-col">
+        <img class="t165__img t-img" src="{{.Site.Home.About.Image.Src}}" alt="{{.Site.Home.About.Image.Alt}}" loading="lazy">
+      </div>
+      <div class="about-text-col">
+        <div class="t165__textwrapper">
+          <div class="t165__title t-heading t-heading_md">
+            {{range .Site.Home.About.Lead}}
+              <p>{{.}}</p>
+            {{end}}
+          </div>
+          <div class="t165__btn-container">
+            <a class="t-btn t-btnflex t-btnflex_type_button t-btnflex_md" href="{{.Site.Contact.CalendarURL}}">
+              <span class="t-btnflex__text">{{.Site.Home.About.ButtonText}}</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="r t-rec t-rec_pt_105 t-rec_pb_120 t-grey stats-record">
+  <div class="t490">
+    <div class="t-section__container t-container t-align_center">
+      <div class="t-col t-col_12">
+        <h2 class="t-section__title t-title t-title_xs">Обо мне в цифрах</h2>
+      </div>
+    </div>
+    <div class="t490__container t-container stats-grid">
+      {{range .Site.Home.Stats}}
+        <article class="t490__col t-align_center">
+          <img class="t490__bgimg" src="{{.Icon}}" alt="" loading="lazy">
+          <div class="t-card__title t-name t-name_xl">
+            <span>{{.Prefix}}</span>
+            <strong>{{.Value}}</strong>
+            <span>{{.Label}}</span>
+          </div>
+        </article>
+      {{end}}
+    </div>
+  </div>
+</section>
+
+<section class="r t-rec t-rec_pt_75 t-rec_pb_75 values-record">
+  <div class="t006">
+    <div class="t-container">
+      <div class="t006__line_top">
+        <div class="t006__uptitle-wrapper">
+          <div class="t006__uptitle t-uptitle t-uptitle_md">Мои ценности</div>
+        </div>
+        <div class="t-divider t-divider_top"></div>
+      </div>
+      <div class="t006__text-impact t-text-impact t-text-impact_md">
+        {{range .Site.Home.Values}}
+          <p><strong>{{.Title}}. </strong>{{.Text}}</p>
+        {{end}}
+      </div>
+      <div class="t-divider t006__line_bottom"></div>
+    </div>
+  </div>
+</section>
+
+<section class="r t-rec t-rec_pt_105 t-rec_pb_45 t-grey qualification-record">
+  <div class="t489">
+    <div class="t-container t489-grid">
+      <div class="t489__top">
+        <h2 class="t489__title t-title t-title_md">Компетенции и квалификации</h2>
+      </div>
+      <div class="t489__descr t-descr t-descr_md">
+        {{range .Site.Home.Qualifications}}
+          <p><strong>{{.Title}}</strong></p>
+          {{range .Items}}<p>{{.}}</p>{{end}}
+          <br>
+        {{end}}
+        <p><strong>Профессиональные стандарты</strong></p>
+        {{range .Site.Home.Standards}}<p>{{.}}</p>{{end}}
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="r t-rec t-rec_pt_90 t-rec_pb_90 review-record">
+  <div class="t477">
+    <div class="t-container t477-grid">
+      <div class="t477__top">
+        <div class="t477__blockimg" style="background-image:url('{{.Site.Home.ReviewPhilosophy.Image.Src}}');"></div>
+      </div>
+      <div class="t477__textwrapper">
+        <div class="t477__content">
+          <div class="t477__box">
+            <h2 class="t477__title t-title t-title_xs">{{.Site.Home.ReviewPhilosophy.Title}}</h2>
+            <div class="t-divider t477__line"></div>
+            {{range .Site.Home.ReviewPhilosophy.Paragraphs}}
+              <p class="t477__descr t-descr t-descr_md">{{.}}</p>
+            {{end}}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="r t-rec t-rec_pt_105 t-rec_pb_120 t-grey price-record" id="pricing">
+  <div class="t812">
+    <div class="t-section__container t-container t-align_center">
+      <div class="t-col t-col_12">
+        <h2 class="t-section__title t-title t-title_xs">Услуги и цены</h2>
+      </div>
+    </div>
+    <div class="t-container price-grid">
+      {{range .Site.Home.Pricing}}
+        <article class="t812__pricelist-item">
+          <div class="t812__pricelist-item__row_1">
+            <h3 class="t812__pricelist-item__title t-name t-name_sm">{{.Title}}</h3>
+            <div class="t812__pricelist-item__price t-name t-name_sm">{{.Price}}</div>
+          </div>
+          <div class="t-divider t812__pricelist-item__line"></div>
+          {{if and .DynamicNote $.USDNote}}<div class="price-note">{{$.USDNote}}</div>{{end}}
+          <p class="t812__pricelist-item__descr t-descr t-descr_xs">{{.Text}}</p>
+        </article>
+      {{end}}
+    </div>
+    <div class="t-section__bottomwrapper t-align_center">
+      <a class="t-btn t-btnflex t-btnflex_type_bbutton t-btnflex_md" href="{{.Site.Contact.CalendarURL}}">
+        <span class="t-btnflex__text">ЗАПИСАТЬСЯ</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section class="r t-rec t-rec_pt_195 t-rec_pb_45 link-record">
+  <div class="t142">
+    <a class="t-btn t-btnflex t-btnflex_type_button t-btnflex_md" href="/rules">
+      <span class="t-btnflex__text">ПРАВИЛА ПРОВЕДЕНИЯ КОНСУЛЬТАЦИЙ (ПСИХОТЕРАПИИ)</span>
+    </a>
+  </div>
+</section>
+
+<section class="r t-rec t-rec_pt_45 t-rec_pb_75 link-record">
+  <div class="t142">
+    <a class="t-btn t-btnflex t-btnflex_type_button t-btnflex_md" href="/memo">
+      <span class="t-btnflex__text">ПАМЯТКА ДЛЯ ПОДГОТОВКИ К ОНЛАЙН-ВСТРЕЧЕ</span>
+    </a>
+  </div>
+</section>
+
+<section class="r t-rec t-rec_pt_105 t-rec_pb_0 faq-title-record" id="faq">
+  <div class="t795">
+    <div class="t-container t-align_center">
+      <h2 class="t795__title t-title t-title_xs">Важные вопросы</h2>
+    </div>
+  </div>
+</section>
+
+<section class="r t-rec t-rec_pt_15 t-rec_pb_60 faq-record">
+  <div class="t668">
+    <div class="t-container">
+      {{range .Site.Home.FAQ}}
+        <details class="t668__accordion">
+          <summary class="t668__trigger-button">
+            <span class="t668__title t-name t-name_xl">{{.Title}}</span>
+            <span class="t668__icon" aria-hidden="true">+</span>
+          </summary>
+          <div class="t668__content">
+            <p class="t668__text t-descr t-descr_xs">{{.Text}}</p>
+          </div>
+        </details>
+      {{end}}
+    </div>
+  </div>
+</section>
+{{end}}

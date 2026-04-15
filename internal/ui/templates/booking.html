@@ -1,0 +1,62 @@
+{{define "content"}}
+<section class="r t-rec t-rec_pt_135 t-rec_pb_90 booking-profile">
+  <div class="t165">
+    <div class="t-container two-col about-grid">
+      <div class="about-image-col">
+        <img class="t165__img t-img" src="{{.Site.Booking.Image.Src}}" alt="{{.Site.Booking.Image.Alt}}">
+      </div>
+      <div class="about-text-col">
+        <div class="t165__textwrapper">
+          <div class="t050__uptitle t-uptitle t-uptitle_sm">Клиентская страница</div>
+          <h1 class="t050__title t-title t-title_xxl">{{.Site.Booking.Title}}</h1>
+          <p class="t-descr t-descr_md"><strong>{{.Site.Brand}}</strong></p>
+          <p class="t-descr t-descr_md">{{.Site.Contact.Location}}</p>
+          <p class="t-descr t-descr_md"><a href="tel:+79652605032">{{.Site.Contact.Phone}}</a></p>
+          {{range .Site.Booking.Description}}<p class="t-descr t-descr_md">{{.}}</p>{{end}}
+          <div class="t165__btn-container">
+            <a class="t-btn t-btnflex t-btnflex_type_button t-btnflex_md" href="#calendar"><span class="t-btnflex__text">ЗАПИСАТЬСЯ</span></a>
+            <a class="booking-telegram" href="{{.Site.Contact.TelegramURL}}" target="_blank" rel="noopener">{{template "iconTelegram" .}} Telegram</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="r t-rec t-rec_pt_105 t-rec_pb_120 t-grey" id="calendar">
+  <div class="t-container booking-grid">
+    <div class="booking-slots">
+      <div class="t050__uptitle t-uptitle t-uptitle_sm">Календарь клиента</div>
+      <h2 class="t-title t-title_xs">Выберите дату и время</h2>
+      <p class="timezone-line t-descr t-descr_md">Ваш часовой пояс: <strong data-timezone-label>определяется</strong></p>
+      <div class="slot-grid" aria-label="Доступные временные промежутки">
+        {{range .Slots}}
+          <button class="slot-card" type="button" data-slot-id="{{.ID}}" data-start="{{.StartISO}}" data-end="{{.EndISO}}">
+            <span class="slot-date">{{.Date}}</span>
+            <span class="slot-weekday">{{.Weekday}}</span>
+            <strong data-slot-time>{{.TimeRange}}</strong>
+          </button>
+        {{end}}
+      </div>
+    </div>
+
+    <form class="booking-form" method="post" action="/booking/submit" data-booking-form>
+      <h2 class="t-title t-title_xs">Личные данные</h2>
+      {{if .Errors}}
+        <div class="form-errors" role="alert">
+          {{range .Errors}}<p>{{.}}</p>{{end}}
+        </div>
+      {{end}}
+      <input type="hidden" name="slot_id" value="{{.Form.SlotID}}" data-slot-input>
+      <input type="hidden" name="timezone" value="{{.Form.ClientTimezone}}" data-timezone-input>
+      <p class="selected-slot" data-selected-slot tabindex="-1">Сначала выберите время в календаре</p>
+
+      <label><span>ФИО</span><input name="name" autocomplete="name" required value="{{.Form.Name}}"></label>
+      <label><span>E-mail</span><input name="email" type="email" autocomplete="email" required value="{{.Form.Email}}"></label>
+      <label><span>Телефон</span><input name="phone" type="tel" autocomplete="tel" required value="{{.Form.Phone}}"></label>
+      <label><span>Комментарий</span><textarea name="comment" rows="4">{{.Form.Comment}}</textarea></label>
+      <button class="t-btn t-btnflex t-btnflex_type_bbutton t-btnflex_md" type="submit"><span class="t-btnflex__text">ОТПРАВИТЬ ЗАЯВКУ</span></button>
+    </form>
+  </div>
+</section>
+{{end}}

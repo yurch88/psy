@@ -1,0 +1,62 @@
+{{define "iconCalendar"}}
+<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+  <path d="M7 2h2v3H7V2Zm8 0h2v3h-2V2Z"></path>
+  <path d="M4 4h16a2 2 0 0 1 2 2v13a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V6a2 2 0 0 1 2-2Zm0 7v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8H4Zm1-5a1 1 0 0 0-1 1v2h16V7a1 1 0 0 0-1-1H5Z"></path>
+</svg>
+{{end}}
+
+{{define "iconTelegram"}}
+<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+  <path d="M21.6 4.2 18.4 19c-.2 1-.8 1.2-1.6.8l-4.5-3.3-2.2 2.1c-.2.2-.4.4-.9.4l.3-4.7 8.5-7.7c.4-.3-.1-.5-.6-.2L6.9 13 2.4 11.6c-1-.3-1-1 .2-1.4L20.1 3.5c.8-.3 1.6.2 1.5.7Z"></path>
+</svg>
+{{end}}
+
+{{define "iconMax"}}
+<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+  <path d="M4 5a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v14a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V5Zm4.1 4v8h2V12.7l2 2.8h.4l2-2.8V17h2V9h-2l-2.2 3.2L10.1 9h-2Z"></path>
+</svg>
+{{end}}
+
+{{define "iconMail"}}
+<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+  <path d="M3 5h18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm0 3.2V17h18V8.2l-8.4 5.2a1.2 1.2 0 0 1-1.2 0L3 8.2Zm1.4-1.2 7.6 4.7L19.6 7H4.4Z"></path>
+</svg>
+{{end}}
+
+{{define "footer"}}
+<section class="r t-rec t-rec_pt_105 t-rec_pb_120 contact-section" id="contacts">
+  <div class="t-container t-align_center">
+    <div class="t-col t-col_12">
+      <div class="t471__descr t-descr t-descr_xxxl t-margin_auto">
+        <strong>Способы связи</strong><br><br>
+        <span>Пожалуйста, используйте Telegram, MAX или запишитесь ко мне, выбрав удобное время в календаре. Ссылки ниже.</span>
+      </div>
+      <div class="t-sociallinks">
+        <ul class="t-sociallinks__wrapper" aria-label="Ссылки для связи">
+          <li><a class="social-circle" href="{{.Site.Contact.TelegramURL}}" target="_blank" rel="noopener" aria-label="Telegram">{{template "iconTelegram" .}}</a></li>
+          <li><a class="social-circle" href="{{.Site.Contact.MaxURL}}" aria-label="MAX">{{template "iconMax" .}}</a></li>
+          <li><a class="social-circle" href="{{.Site.Contact.CalendarURL}}" aria-label="Календарь">{{template "iconCalendar" .}}</a></li>
+          <li><a class="social-circle" href="mailto:{{.Site.Contact.Email}}" aria-label="E-mail">{{template "iconMail" .}}</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+<footer class="r t-rec t-rec_pt_30 t-rec_pb_60 t457 site-footer">
+  <div class="t-container t-align_center">
+    <nav class="footer-nav" aria-label="Навигация в подвале">
+      <a href="/#about">Обо мне</a>
+      <a href="/#pricing">Стоимость</a>
+      <a href="/#faq">Вопросы и ответы</a>
+      <a href="/#contacts">Контакты</a>
+      <a href="/rules">Правила</a>
+      <a href="/memo">Памятка</a>
+    </nav>
+    <div class="footer-logo t-title">{{.Site.Brand}}</div>
+    <div class="footer-copy">
+      © Кудинова Наталья Борисовна<br>
+      <a href="mailto:{{.Site.Contact.Email}}">{{.Site.Contact.Email}}</a>
+    </div>
+  </div>
+</footer>
+{{end}}

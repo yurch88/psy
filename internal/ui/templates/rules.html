@@ -1,0 +1,57 @@
+{{define "content"}}
+<section class="r t-rec t-rec_pt_45 t-rec_pb_45 page-title-record">
+  <div class="t050">
+    <div class="t-container t-align_center">
+      <div class="t050__uptitle t-uptitle t-uptitle_sm">{{.Site.Brand}}</div>
+      <h1 class="t050__title t-title t-title_xxl">{{.Site.Rules.Title}}</h1>
+      <div class="t050__descr t-descr t-descr_xxl">{{.Site.Rules.Subtitle}}</div>
+    </div>
+  </div>
+</section>
+
+<section class="r t-rec t-rec_pt_0 t-rec_pb_0 t220-record">
+  <div class="t220">
+    <div class="t-container">
+      <div class="t220__textwrapper">
+        <h2 class="t220__title t-heading t-heading_sm">Цель консультирования</h2>
+        {{range .Site.Rules.Lead}}<p class="t220__text t-text t-text_md">{{.}}</p>{{end}}
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="r t-rec t-rec_pt_75 t-rec_pb_105 rules-session-record">
+  <div class="t512">
+    <div class="t-section__container t-container t-align_center">
+      <h2 class="t-section__title t-title t-title_xs">О консультационных сессиях</h2>
+    </div>
+    <ul class="t512__container t-container">
+      {{range $i, $block := .Site.Rules.Blocks}}
+        {{if lt $i 3}}
+          <li class="t512__item">
+            <h3 class="t-name t-name_md">{{$block.Title}}</h3>
+            {{range $block.Paragraphs}}<p class="t-descr t-descr_sm">{{.}}</p>{{end}}
+          </li>
+        {{end}}
+      {{end}}
+    </ul>
+  </div>
+</section>
+
+{{range $i, $block := .Site.Rules.Blocks}}
+  {{if ge $i 3}}
+    <section class="r t-rec t-rec_pt_90 t-rec_pb_75 {{if eq $i 3}}t-grey{{end}} rules-info-record">
+      <div class="t489">
+        <div class="t-container t489-grid">
+          <div class="t489__top">
+            <h2 class="t489__title t-title t-title_md">{{$block.Title}}</h2>
+          </div>
+          <div class="t489__descr t-descr t-descr_md">
+            {{range $block.Paragraphs}}<p>{{.}}</p>{{end}}
+          </div>
+        </div>
+      </div>
+    </section>
+  {{end}}
+{{end}}
+{{end}}

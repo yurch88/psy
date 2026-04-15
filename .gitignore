@@ -1,0 +1,5 @@
+bin/
+data/*.jsonl
+*.exe
+*.log
+.env

@@ -1,0 +1,22 @@
+{{define "content"}}
+<section class="r t-rec t-rec_pt_105 t-rec_pb_120 t220-record">
+  <div class="t220">
+    <div class="t-container">
+      <div class="t220__textwrapper">
+        <div class="t050__uptitle t-uptitle t-uptitle_sm">{{.Site.Brand}}</div>
+        <h1 class="t050__title t-title t-title_xxl">Заявка принята</h1>
+        {{if .Booking}}
+          <p class="t220__text t-text t-text_md">Спасибо, {{.Booking.Name}}. Вы выбрали слот {{.Booking.Start.Format "02.01.2006 15:04"}} по московскому времени.</p>
+          <p class="t220__text t-text t-text_md">Я свяжусь с Вами по указанным контактам, чтобы подтвердить запись и оплату.</p>
+        {{else}}
+          <p class="t220__text t-text t-text_md">Заявка сохранена. Я свяжусь с Вами для подтверждения.</p>
+        {{end}}
+        <div class="t-section__bottomwrapper t-align_center">
+          <a class="t-btn t-btnflex t-btnflex_type_button t-btnflex_md" href="/"><span class="t-btnflex__text">НА ГЛАВНУЮ</span></a>
+          <a class="t-btn t-btnflex t-btnflex_type_bbutton t-btnflex_md" href="/booking#calendar"><span class="t-btnflex__text">ВЫБРАТЬ ДРУГОЕ ВРЕМЯ</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{{end}}

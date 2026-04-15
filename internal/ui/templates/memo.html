@@ -1,0 +1,38 @@
+{{define "content"}}
+<section class="r t-rec t-rec_pt_0 t-rec_pb_0 memo-hero-record">
+  <div class="t-cover" style="--hero-image: url('{{(index .Site.Memo.Blocks 0).Image.Src}}');">
+    <div class="t-cover__filter"></div>
+    <div class="t-container">
+      <div class="t-cover__wrapper t-valign_middle">
+        <div class="t001 t-align_center">
+          <h1 class="t001__title t-title t-title_xl">{{.Site.Memo.Title}}</h1>
+          <div class="t001__descr t-descr t-descr_xl">{{.Site.Memo.Subtitle}}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="r t-rec t-rec_pt_90 t-rec_pb_90 memo-record">
+  <div class="t843">
+    <div class="t-container memo-stack">
+      {{range $i, $block := .Site.Memo.Blocks}}
+        {{if gt $i 0}}
+          <article class="memo-row {{if eq (mod $i 2) 0}}memo-row-reverse{{end}}">
+            <div class="memo-image" style="background-image:url('{{$block.Image.Src}}');"></div>
+            <div class="memo-text">
+              <h2 class="t-title t-title_xs">{{$block.Title}}</h2>
+              {{range $block.Paragraphs}}<p class="t-descr t-descr_md">{{.}}</p>{{end}}
+            </div>
+          </article>
+        {{end}}
+      {{end}}
+      <div class="t-section__bottomwrapper t-align_center">
+        <a class="t-btn t-btnflex t-btnflex_type_bbutton t-btnflex_md" href="{{.Site.Contact.CalendarURL}}">
+          <span class="t-btnflex__text">ЗАПИСАТЬСЯ</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+{{end}}
