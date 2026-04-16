@@ -37,7 +37,7 @@ func FromEnv() Config {
 		Email:          env("CONTACT_EMAIL", "natalia.kudinova.psy@gmail.com"),
 		Phone:          env("CONTACT_PHONE", "+7 (965) 260-50-32"),
 		Location:       env("CONTACT_LOCATION", "Онлайн, Россия и другие страны"),
-		TelegramURL:    env("TELEGRAM_URL", "https://t.me/NatalyaBKudinova"),
+		TelegramURL:    env("TELEGRAM_URL", "https://t.me/NatalyaPoetry"),
 		MaxURL:         env("MAX_URL", "#contacts"),
 		CalendarURL:    calendarURL(),
 	}

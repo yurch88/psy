@@ -51,7 +51,7 @@ RUN_TESTS="${RUN_TESTS:-1}"
 CONTACT_EMAIL="${CONTACT_EMAIL:-natalia.kudinova.psy@gmail.com}"
 CONTACT_PHONE="${CONTACT_PHONE:-+7 (965) 260-50-32}"
 CONTACT_LOCATION="${CONTACT_LOCATION:-Онлайн, Россия и другие страны}"
-TELEGRAM_URL="${TELEGRAM_URL:-https://t.me/NatalyaBKudinova}"
+TELEGRAM_URL="${TELEGRAM_URL:-https://t.me/NatalyaPoetry}"
 MAX_URL="${MAX_URL:-#contacts}"
 CALENDAR_URL="${CALENDAR_URL:-/booking}"
 USD_RATE_URL="${USD_RATE_URL:-https://www.cbr-xml-daily.ru/daily_json.js}"
@@ -210,6 +210,12 @@ ensure_user_and_dirs() {
 ensure_env_file() {
   if [[ -f "$ENV_FILE" ]]; then
     info "env file exists: $ENV_FILE"
+    if grep -q '^TELEGRAM_URL=https://t.me/NatalyaBKudinova$' "$ENV_FILE"; then
+      info "updating TELEGRAM_URL in $ENV_FILE"
+      sed -i 's|^TELEGRAM_URL=https://t.me/NatalyaBKudinova$|TELEGRAM_URL=https://t.me/NatalyaPoetry|' "$ENV_FILE"
+    elif ! grep -q '^TELEGRAM_URL=' "$ENV_FILE"; then
+      printf '\nTELEGRAM_URL=%s\n' "$TELEGRAM_URL" >>"$ENV_FILE"
+    fi
     if grep -q '^CALENDAR_URL=/booking#calendar$' "$ENV_FILE"; then
       info "updating CALENDAR_URL in $ENV_FILE to /booking"
       sed -i 's|^CALENDAR_URL=/booking#calendar$|CALENDAR_URL=/booking|' "$ENV_FILE"
