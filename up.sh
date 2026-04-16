@@ -212,10 +212,12 @@ ensure_user_and_dirs() {
 ensure_env_file() {
   if [[ -f "$ENV_FILE" ]]; then
     info "env file exists: $ENV_FILE"
-    if grep -q '^TELEGRAM_URL=https://t.me/NatalyaBKudinova$' "$ENV_FILE"; then
-      info "updating TELEGRAM_URL in $ENV_FILE"
-      sed -i 's|^TELEGRAM_URL=https://t.me/NatalyaBKudinova$|TELEGRAM_URL=https://t.me/NatalyaPoetry|' "$ENV_FILE"
-    elif ! grep -q '^TELEGRAM_URL=' "$ENV_FILE"; then
+    if grep -q '^TELEGRAM_URL=' "$ENV_FILE"; then
+      if grep -q '^TELEGRAM_URL=.*NatalyaBKudinova' "$ENV_FILE"; then
+        info "migrating old TELEGRAM_URL in $ENV_FILE"
+        sed -i '/^TELEGRAM_URL=/ s|NatalyaBKudinova|NatalyaPoetry|g' "$ENV_FILE"
+      fi
+    else
       printf '\nTELEGRAM_URL=%s\n' "$TELEGRAM_URL" >>"$ENV_FILE"
     fi
     if grep -q '^CALENDAR_URL=/booking#calendar$' "$ENV_FILE"; then
