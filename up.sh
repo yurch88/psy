@@ -47,6 +47,8 @@ BACKUP_DIR="${BACKUP_DIR:-/home/backups/psy}"
 BACKUP_KEEP="${BACKUP_KEEP:-20}"
 
 RUN_TESTS="${RUN_TESTS:-1}"
+APT_UPDATE_RETRIES="${APT_UPDATE_RETRIES:-5}"
+APT_UPDATE_RETRY_DELAY="${APT_UPDATE_RETRY_DELAY:-15}"
 
 # Optional contact/link overrides for the app.
 CONTACT_EMAIL="${CONTACT_EMAIL:-natalia.kudinova.psy@gmail.com}"
@@ -145,6 +147,26 @@ domain_points_to_server() {
   grep -qw "$SERVER_IP" <<<"$resolved"
 }
 
+apt_update_with_retry() {
+  local attempt=1
+  local max_attempts="$APT_UPDATE_RETRIES"
+
+  while (( attempt <= max_attempts )); do
+    if apt-get update -o Acquire::Retries=3; then
+      return 0
+    fi
+
+    if (( attempt == max_attempts )); then
+      warn "apt-get update failed after ${max_attempts} attempts; continuing with existing package indexes"
+      return 0
+    fi
+
+    warn "apt-get update failed (attempt ${attempt}/${max_attempts}); retrying in ${APT_UPDATE_RETRY_DELAY}s"
+    sleep "$APT_UPDATE_RETRY_DELAY"
+    attempt=$((attempt + 1))
+  done
+}
+
 # =========================
 # INSTALL PREREQS
 # =========================
@@ -153,7 +175,7 @@ install_packages() {
 
   export DEBIAN_FRONTEND=noninteractive
 
-  apt-get update
+  apt_update_with_retry
   apt-get install -y \
     ca-certificates \
     curl \
