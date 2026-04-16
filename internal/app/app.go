@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 
@@ -9,11 +10,13 @@ import (
 	"psy/internal/content"
 	"psy/internal/handlers"
 	"psy/internal/rates"
+	"psy/internal/telegram"
 	"psy/internal/ui"
 )
 
 type App struct {
-	handler http.Handler
+	handler     http.Handler
+	backgrounds []func(context.Context)
 }
 
 func New(cfg config.Config, logger *slog.Logger) (*App, error) {
@@ -36,14 +39,29 @@ func New(cfg config.Config, logger *slog.Logger) (*App, error) {
 		CalendarURL: cfg.CalendarURL,
 	})
 
+	var backgrounds []func(context.Context)
+	telegramService := telegram.New(cfg.TelegramBotToken, cfg.TelegramNotifyChatIDs, calendarService, logger)
+	if telegramService.Enabled() {
+		backgrounds = append(backgrounds, telegramService.Run)
+	}
+
 	rateService := rates.NewService(cfg.USDRateURL, cfg.USDRateTimeout)
-	pageHandler := handlers.New(site, renderer, calendarService, rateService, logger)
+	pageHandler := handlers.New(site, renderer, calendarService, rateService, telegramService, logger)
 
 	mux := http.NewServeMux()
 	pageHandler.Register(mux)
 	mux.Handle("/static/", http.StripPrefix("/static/", ui.StaticHandler()))
 
-	return &App{handler: mux}, nil
+	return &App{
+		handler:     mux,
+		backgrounds: backgrounds,
+	}, nil
+}
+
+func (a *App) Start(ctx context.Context) {
+	for _, background := range a.backgrounds {
+		go background(ctx)
+	}
 }
 
 func (a *App) Handler() http.Handler {

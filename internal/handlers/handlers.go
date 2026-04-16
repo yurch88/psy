@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -12,11 +13,16 @@ import (
 	"psy/internal/ui"
 )
 
+type BookingNotifier interface {
+	NotifyBooking(context.Context, calendar.Booking) error
+}
+
 type Handler struct {
 	site     content.Site
 	renderer *ui.Renderer
 	calendar *calendar.Service
 	rates    *rates.Service
+	notifier BookingNotifier
 	logger   *slog.Logger
 }
 
@@ -49,12 +55,13 @@ type BookingForm struct {
 	Comment        string
 }
 
-func New(site content.Site, renderer *ui.Renderer, calendarService *calendar.Service, rateService *rates.Service, logger *slog.Logger) *Handler {
+func New(site content.Site, renderer *ui.Renderer, calendarService *calendar.Service, rateService *rates.Service, notifier BookingNotifier, logger *slog.Logger) *Handler {
 	return &Handler{
 		site:     site,
 		renderer: renderer,
 		calendar: calendarService,
 		rates:    rateService,
+		notifier: notifier,
 		logger:   logger,
 	}
 }
@@ -163,9 +170,15 @@ func (h *Handler) submitBooking(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if h.notifier != nil {
+		if err := h.notifier.NotifyBooking(r.Context(), booking); err != nil {
+			h.logger.Error("notify booking", "booking_id", booking.ID, "error", err)
+		}
+	}
+
 	h.render(w, "thanks", PageData{
 		Title:       "Заявка принята - " + h.site.Brand,
-		Description: "Заявка на консультацию сохранена.",
+		Description: "Заявка на консультацию сохранена и отправлена на подтверждение.",
 		Site:        h.site,
 		Booking:     &booking,
 	})
