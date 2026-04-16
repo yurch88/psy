@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -20,6 +21,9 @@ type Config struct {
 	TelegramURL string
 	MaxURL      string
 	CalendarURL string
+
+	TelegramBotToken      string
+	TelegramNotifyChatIDs []string
 }
 
 func FromEnv() Config {
@@ -28,18 +32,20 @@ func FromEnv() Config {
 	dataDir := env("DATA_DIR", "data")
 
 	return Config{
-		Addr:           addr,
-		DataDir:        dataDir,
-		BookingsPath:   filepath.Join(dataDir, "bookings.jsonl"),
-		BaseTimezone:   env("BASE_TIMEZONE", "Europe/Moscow"),
-		USDRateURL:     env("USD_RATE_URL", "https://www.cbr-xml-daily.ru/daily_json.js"),
-		USDRateTimeout: 3 * time.Second,
-		Email:          env("CONTACT_EMAIL", "natalia.kudinova.psy@gmail.com"),
-		Phone:          env("CONTACT_PHONE", "+7 (965) 260-50-32"),
-		Location:       env("CONTACT_LOCATION", "Онлайн, Россия и другие страны"),
-		TelegramURL:    env("TELEGRAM_URL", "https://t.me/NatalyaPoetry"),
-		MaxURL:         env("MAX_URL", "#contacts"),
-		CalendarURL:    calendarURL(),
+		Addr:                  addr,
+		DataDir:               dataDir,
+		BookingsPath:          filepath.Join(dataDir, "bookings.jsonl"),
+		BaseTimezone:          env("BASE_TIMEZONE", "Europe/Moscow"),
+		USDRateURL:            env("USD_RATE_URL", "https://www.cbr-xml-daily.ru/daily_json.js"),
+		USDRateTimeout:        3 * time.Second,
+		Email:                 env("CONTACT_EMAIL", "natalia.kudinova.psy@gmail.com"),
+		Phone:                 env("CONTACT_PHONE", "+7 (965) 260-50-32"),
+		Location:              env("CONTACT_LOCATION", "Онлайн, Россия и другие страны"),
+		TelegramURL:           env("TELEGRAM_URL", "https://t.me/NatalyaPoetry"),
+		MaxURL:                env("MAX_URL", "#contacts"),
+		CalendarURL:           calendarURL(),
+		TelegramBotToken:      env("TG_BOT_TOKEN", ""),
+		TelegramNotifyChatIDs: csvEnv("TG_NOTIFY_CHAT_IDS"),
 	}
 }
 
@@ -57,4 +63,22 @@ func calendarURL() string {
 		return "/booking"
 	}
 	return value
+}
+
+func csvEnv(key string) []string {
+	value := os.Getenv(key)
+	if value == "" {
+		return nil
+	}
+
+	parts := strings.Split(value, ",")
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			result = append(result, part)
+		}
+	}
+
+	return result
 }

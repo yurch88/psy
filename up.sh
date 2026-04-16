@@ -52,6 +52,8 @@ CONTACT_EMAIL="${CONTACT_EMAIL:-natalia.kudinova.psy@gmail.com}"
 CONTACT_PHONE="${CONTACT_PHONE:-+7 (965) 260-50-32}"
 CONTACT_LOCATION="${CONTACT_LOCATION:-Онлайн, Россия и другие страны}"
 TELEGRAM_URL="${TELEGRAM_URL:-https://t.me/NatalyaPoetry}"
+TG_BOT_TOKEN="${TG_BOT_TOKEN:-}"
+TG_NOTIFY_CHAT_IDS="${TG_NOTIFY_CHAT_IDS:-}"
 MAX_URL="${MAX_URL:-#contacts}"
 CALENDAR_URL="${CALENDAR_URL:-/booking}"
 USD_RATE_URL="${USD_RATE_URL:-https://www.cbr-xml-daily.ru/daily_json.js}"
@@ -222,6 +224,12 @@ ensure_env_file() {
     elif ! grep -q '^CALENDAR_URL=' "$ENV_FILE"; then
       printf '\nCALENDAR_URL=%s\n' "$CALENDAR_URL" >>"$ENV_FILE"
     fi
+    if ! grep -q '^TG_BOT_TOKEN=' "$ENV_FILE"; then
+      printf '\nTG_BOT_TOKEN=%s\n' "$TG_BOT_TOKEN" >>"$ENV_FILE"
+    fi
+    if ! grep -q '^TG_NOTIFY_CHAT_IDS=' "$ENV_FILE"; then
+      printf 'TG_NOTIFY_CHAT_IDS=%s\n' "$TG_NOTIFY_CHAT_IDS" >>"$ENV_FILE"
+    fi
     return 0
   fi
 
@@ -233,6 +241,8 @@ CONTACT_EMAIL=$CONTACT_EMAIL
 CONTACT_PHONE=$CONTACT_PHONE
 CONTACT_LOCATION=$CONTACT_LOCATION
 TELEGRAM_URL=$TELEGRAM_URL
+TG_BOT_TOKEN=$TG_BOT_TOKEN
+TG_NOTIFY_CHAT_IDS=$TG_NOTIFY_CHAT_IDS
 MAX_URL=$MAX_URL
 CALENDAR_URL=$CALENDAR_URL
 USD_RATE_URL=$USD_RATE_URL
