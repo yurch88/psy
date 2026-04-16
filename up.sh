@@ -171,21 +171,37 @@ apt_update_with_retry() {
 # INSTALL PREREQS
 # =========================
 install_packages() {
-  info "installing system packages"
+  local packages missing_packages=()
+  packages=(
+    ca-certificates
+    curl
+    git
+    nginx
+    certbot
+    python3-certbot-nginx
+    tar
+    gzip
+    openssl
+  )
+
+  for package in "${packages[@]}"; do
+    if ! dpkg -s "$package" >/dev/null 2>&1; then
+      missing_packages+=("$package")
+    fi
+  done
+
+  if [[ "${#missing_packages[@]}" -eq 0 ]]; then
+    info "system packages already installed; skipping apt"
+    systemctl enable --now nginx >/dev/null 2>&1 || true
+    return 0
+  fi
+
+  info "installing missing system packages: ${missing_packages[*]}"
 
   export DEBIAN_FRONTEND=noninteractive
 
   apt_update_with_retry
-  apt-get install -y \
-    ca-certificates \
-    curl \
-    git \
-    nginx \
-    certbot \
-    python3-certbot-nginx \
-    tar \
-    gzip \
-    openssl
+  apt-get install -y "${missing_packages[@]}"
 
   systemctl enable --now nginx
 }
