@@ -30,13 +30,21 @@
       <h2 class="t-title t-title_xs">Выберите дату и время</h2>
       <p class="timezone-line t-descr t-descr_md">Ваш часовой пояс: <strong data-timezone-label>определяется</strong></p>
       <div class="slot-grid" aria-label="Доступные временные промежутки">
-        {{range .Slots}}
-          <button class="slot-card{{if .Disabled}} is-disabled{{end}}" type="button" data-slot-id="{{.ID}}" data-start="{{.StartISO}}" data-end="{{.EndISO}}" {{if .Disabled}}disabled aria-disabled="true"{{end}}>
-            <span class="slot-date">{{.Date}}</span>
-            <span class="slot-weekday">{{.Weekday}}</span>
-            <strong data-slot-time>{{.TimeRange}}</strong>
-            {{if .Disabled}}<span class="slot-status">Недоступно</span>{{end}}
-          </button>
+        {{range .SlotDays}}
+          <article class="slot-day-card">
+            <header class="slot-day-header">
+              <span class="slot-date">{{.Date}}</span>
+              <span class="slot-weekday">{{.Weekday}}</span>
+            </header>
+            <div class="slot-time-list">
+              {{range .Times}}
+                <button class="slot-time-option{{if .Disabled}} is-disabled{{end}}" type="button" data-slot-id="{{.ID}}" data-start="{{.StartISO}}" data-end="{{.EndISO}}" {{if .Disabled}}disabled aria-disabled="true"{{end}}>
+                  <span class="slot-time-range" data-slot-time>{{.TimeRange}}</span>
+                  {{if .Disabled}}<span class="slot-time-status">Недоступно</span>{{end}}
+                </button>
+              {{end}}
+            </div>
+          </article>
         {{end}}
       </div>
     </div>

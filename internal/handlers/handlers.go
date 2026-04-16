@@ -31,16 +31,20 @@ type PageData struct {
 	Description string
 	Site        content.Site
 	USDNote     string
-	Slots       []SlotView
+	SlotDays    []SlotDayView
 	Form        BookingForm
 	Errors      []string
 	Booking     *calendar.Booking
 }
 
-type SlotView struct {
+type SlotDayView struct {
+	Date    string
+	Weekday string
+	Times   []SlotTimeView
+}
+
+type SlotTimeView struct {
 	ID        string
-	Date      string
-	Weekday   string
 	TimeRange string
 	StartISO  string
 	EndISO    string
@@ -193,7 +197,7 @@ func (h *Handler) healthz(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) renderBooking(w http.ResponseWriter, data PageData) {
-	data.Slots = h.slotViews(h.calendar.Slots())
+	data.SlotDays = h.slotDays(h.calendar.Slots())
 	h.render(w, "booking", data)
 }
 
@@ -206,20 +210,30 @@ func (h *Handler) render(w http.ResponseWriter, page string, data PageData) {
 	}
 }
 
-func (h *Handler) slotViews(slots []calendar.Slot) []SlotView {
-	views := make([]SlotView, 0, len(slots))
+func (h *Handler) slotDays(slots []calendar.Slot) []SlotDayView {
+	days := make([]SlotDayView, 0)
+
 	for _, slot := range slots {
-		views = append(views, SlotView{
+		date := slot.Start.Format("02.01")
+		weekday := weekdayRU(slot.Start.Weekday())
+
+		if len(days) == 0 || days[len(days)-1].Date != date {
+			days = append(days, SlotDayView{
+				Date:    date,
+				Weekday: weekday,
+			})
+		}
+
+		days[len(days)-1].Times = append(days[len(days)-1].Times, SlotTimeView{
 			ID:        slot.ID,
-			Date:      slot.Start.Format("02.01"),
-			Weekday:   weekdayRU(slot.Start.Weekday()),
 			TimeRange: slot.Start.Format("15:04") + "-" + slot.End.Format("15:04"),
 			StartISO:  slot.Start.Format(time.RFC3339),
 			EndISO:    slot.End.Format(time.RFC3339),
 			Disabled:  slot.Disabled,
 		})
 	}
-	return views
+
+	return days
 }
 
 func requireMethod(w http.ResponseWriter, r *http.Request, method string) bool {

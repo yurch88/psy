@@ -921,23 +921,50 @@ svg {
   gap: 12px;
 }
 
-.slot-card {
-  min-height: 116px;
+.slot-day-card {
+  display: grid;
+  align-content: start;
+  min-height: 180px;
   padding: 16px;
-  border: 1px solid rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  background: var(--white);
+}
+
+.slot-day-header {
+  margin-bottom: 14px;
+}
+
+.slot-time-list {
+  display: grid;
+  gap: 8px;
+}
+
+.slot-time-option {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
   color: var(--black);
   background: var(--white);
   text-align: left;
   cursor: pointer;
 }
 
-.slot-card.is-selected {
+.slot-time-option:hover {
+  border-color: rgba(0, 0, 0, 0.55);
+}
+
+.slot-time-option.is-selected {
   color: var(--white);
   background: var(--black);
 }
 
-.slot-card.is-disabled {
-  border-color: rgba(0, 0, 0, 0.18);
+.slot-time-option.is-disabled {
+  border-color: rgba(0, 0, 0, 0.12);
   color: rgba(0, 0, 0, 0.42);
   background: #f0f0f0;
   cursor: not-allowed;
@@ -945,7 +972,7 @@ svg {
 
 .slot-date,
 .slot-weekday,
-.slot-card strong {
+.slot-time-range {
   display: block;
 }
 
@@ -963,6 +990,14 @@ svg {
   display: block;
   margin-top: 10px;
   font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+.slot-time-status {
+  flex: 0 0 auto;
+  font-size: 11px;
   font-weight: 600;
   line-height: 1.35;
   text-transform: uppercase;

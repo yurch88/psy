@@ -19,9 +19,9 @@
 
   const slotInput = document.querySelector('[data-slot-input]');
   const selectedSlot = document.querySelector('[data-selected-slot]');
-  const slotCards = Array.from(document.querySelectorAll('[data-slot-id]'));
+  const slotOptions = Array.from(document.querySelectorAll('[data-slot-id]'));
 
-  slotCards.forEach((slot) => {
+  slotOptions.forEach((slot) => {
     const start = new Date(slot.dataset.start);
     const end = new Date(slot.dataset.end);
     const timeNode = slot.querySelector('[data-slot-time]');
@@ -37,7 +37,7 @@
       if (isDisabled) {
         return;
       }
-      slotCards.forEach((card) => card.classList.remove('is-selected'));
+      slotOptions.forEach((option) => option.classList.remove('is-selected'));
       slot.classList.add('is-selected');
       if (slotInput) {
         slotInput.value = slot.dataset.slotId;
@@ -49,7 +49,7 @@
   });
 
   if (slotInput && slotInput.value) {
-    const current = slotCards.find((slot) => slot.dataset.slotId === slotInput.value && !slot.disabled);
+    const current = slotOptions.find((slot) => slot.dataset.slotId === slotInput.value && !slot.disabled);
     if (current) {
       current.click();
     }
