@@ -9,6 +9,7 @@ import (
 	"psy/internal/config"
 	"psy/internal/content"
 	"psy/internal/handlers"
+	"psy/internal/mailer"
 	"psy/internal/rates"
 	"psy/internal/telegram"
 	"psy/internal/ui"
@@ -40,7 +41,8 @@ func New(cfg config.Config, logger *slog.Logger) (*App, error) {
 	})
 
 	var backgrounds []func(context.Context)
-	telegramService := telegram.New(cfg.TelegramBotToken, cfg.TelegramNotifyChatIDs, calendarService, logger)
+	emailService := mailer.NewResend(cfg.ResendAPIKey, cfg.EmailFrom, cfg.EmailReplyTo, cfg.BaseTimezone, logger)
+	telegramService := telegram.New(cfg.TelegramBotToken, cfg.TelegramNotifyChatIDs, calendarService, emailService, logger)
 	if telegramService.Enabled() {
 		backgrounds = append(backgrounds, telegramService.Run)
 	}

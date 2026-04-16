@@ -52,6 +52,9 @@ func TestConfirmBlocksSlotAndRejectsOtherPendingRequests(t *testing.T) {
 	if err != nil {
 		t.Fatalf("confirm first: %v", err)
 	}
+	if !result.TransitionedToConfirmed {
+		t.Fatalf("expected confirmation transition flag to be set")
+	}
 	if result.Booking.EffectiveStatus() != BookingStatusConfirmed {
 		t.Fatalf("expected confirmed status, got %s", result.Booking.EffectiveStatus())
 	}

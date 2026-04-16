@@ -18,11 +18,16 @@ import (
 const apiBase = "https://api.telegram.org"
 
 type Service struct {
-	token    string
-	chatIDs  []string
-	calendar *calendar.Service
-	logger   *slog.Logger
-	client   *http.Client
+	token         string
+	chatIDs       []string
+	calendar      *calendar.Service
+	confirmations ConfirmationSender
+	logger        *slog.Logger
+	client        *http.Client
+}
+
+type ConfirmationSender interface {
+	SendBookingConfirmation(context.Context, calendar.Booking) error
 }
 
 type Update struct {
@@ -91,7 +96,7 @@ type sentMessage struct {
 	MessageID int `json:"message_id"`
 }
 
-func New(token string, chatIDs []string, calendarService *calendar.Service, logger *slog.Logger) *Service {
+func New(token string, chatIDs []string, calendarService *calendar.Service, confirmations ConfirmationSender, logger *slog.Logger) *Service {
 	normalizedIDs := make([]string, 0, len(chatIDs))
 	seen := make(map[string]bool)
 
@@ -105,11 +110,12 @@ func New(token string, chatIDs []string, calendarService *calendar.Service, logg
 	}
 
 	return &Service{
-		token:    strings.TrimSpace(token),
-		chatIDs:  normalizedIDs,
-		calendar: calendarService,
-		logger:   logger,
-		client:   &http.Client{Timeout: 70 * time.Second},
+		token:         strings.TrimSpace(token),
+		chatIDs:       normalizedIDs,
+		calendar:      calendarService,
+		confirmations: confirmations,
+		logger:        logger,
+		client:        &http.Client{Timeout: 70 * time.Second},
 	}
 }
 
@@ -226,6 +232,12 @@ func (s *Service) handleUpdate(ctx context.Context, update Update) error {
 	for _, booking := range updated {
 		if err := s.syncBookingNotifications(ctx, booking); err != nil {
 			s.logger.Warn("telegram sync booking notifications failed", "booking_id", booking.ID, "error", err)
+		}
+	}
+
+	if action == calendar.ReviewActionConfirm && result.TransitionedToConfirmed && s.confirmations != nil {
+		if err := s.confirmations.SendBookingConfirmation(ctx, result.Booking); err != nil {
+			s.logger.Error("send booking confirmation email", "booking_id", result.Booking.ID, "error", err)
 		}
 	}
 

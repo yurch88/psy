@@ -15,15 +15,18 @@ type Config struct {
 	USDRateURL     string
 	USDRateTimeout time.Duration
 
-	Email       string
-	Phone       string
-	Location    string
-	TelegramURL string
-	MaxURL      string
-	CalendarURL string
+	Email        string
+	Phone        string
+	Location     string
+	TelegramURL  string
+	MaxURL       string
+	CalendarURL  string
+	EmailFrom    string
+	EmailReplyTo string
 
 	TelegramBotToken      string
 	TelegramNotifyChatIDs []string
+	ResendAPIKey          string
 }
 
 func FromEnv() Config {
@@ -44,8 +47,11 @@ func FromEnv() Config {
 		TelegramURL:           telegramURL(),
 		MaxURL:                env("MAX_URL", "#contacts"),
 		CalendarURL:           calendarURL(),
+		EmailFrom:             env("EMAIL_FROM", "Natalya Kudinova <booking@kudinovanatalya-psy.ru>"),
+		EmailReplyTo:          env("EMAIL_REPLY_TO", env("CONTACT_EMAIL", "natalia.kudinova.psy@gmail.com")),
 		TelegramBotToken:      env("TG_BOT_TOKEN", ""),
 		TelegramNotifyChatIDs: csvEnv("TG_NOTIFY_CHAT_IDS"),
+		ResendAPIKey:          env("RESEND_API_KEY", ""),
 	}
 }
 

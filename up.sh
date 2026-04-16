@@ -57,6 +57,9 @@ CONTACT_LOCATION="${CONTACT_LOCATION:-Онлайн, Россия и другие
 TELEGRAM_URL="${TELEGRAM_URL:-https://t.me/NatalyaPoetry}"
 TG_BOT_TOKEN="${TG_BOT_TOKEN:-}"
 TG_NOTIFY_CHAT_IDS="${TG_NOTIFY_CHAT_IDS:-}"
+RESEND_API_KEY="${RESEND_API_KEY:-}"
+EMAIL_FROM="${EMAIL_FROM:-Natalya Kudinova <booking@kudinovanatalya-psy.ru>}"
+EMAIL_REPLY_TO="${EMAIL_REPLY_TO:-$CONTACT_EMAIL}"
 MAX_URL="${MAX_URL:-#contacts}"
 CALENDAR_URL="${CALENDAR_URL:-/booking}"
 USD_RATE_URL="${USD_RATE_URL:-https://www.cbr-xml-daily.ru/daily_json.js}"
@@ -279,6 +282,15 @@ ensure_env_file() {
     if ! grep -q '^TG_NOTIFY_CHAT_IDS=' "$ENV_FILE"; then
       printf 'TG_NOTIFY_CHAT_IDS=%s\n' "$TG_NOTIFY_CHAT_IDS" >>"$ENV_FILE"
     fi
+    if ! grep -q '^RESEND_API_KEY=' "$ENV_FILE"; then
+      printf 'RESEND_API_KEY=%s\n' "$RESEND_API_KEY" >>"$ENV_FILE"
+    fi
+    if ! grep -q '^EMAIL_FROM=' "$ENV_FILE"; then
+      printf 'EMAIL_FROM=%s\n' "$EMAIL_FROM" >>"$ENV_FILE"
+    fi
+    if ! grep -q '^EMAIL_REPLY_TO=' "$ENV_FILE"; then
+      printf 'EMAIL_REPLY_TO=%s\n' "$EMAIL_REPLY_TO" >>"$ENV_FILE"
+    fi
     return 0
   fi
 
@@ -292,6 +304,9 @@ CONTACT_LOCATION=$CONTACT_LOCATION
 TELEGRAM_URL=$TELEGRAM_URL
 TG_BOT_TOKEN=$TG_BOT_TOKEN
 TG_NOTIFY_CHAT_IDS=$TG_NOTIFY_CHAT_IDS
+RESEND_API_KEY=$RESEND_API_KEY
+EMAIL_FROM=$EMAIL_FROM
+EMAIL_REPLY_TO=$EMAIL_REPLY_TO
 MAX_URL=$MAX_URL
 CALENDAR_URL=$CALENDAR_URL
 USD_RATE_URL=$USD_RATE_URL

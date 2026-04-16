@@ -83,9 +83,10 @@ type Booking struct {
 }
 
 type ReviewResult struct {
-	Booking      Booking
-	Updated      []Booking
-	CallbackText string
+	Booking                 Booking
+	Updated                 []Booking
+	CallbackText            string
+	TransitionedToConfirmed bool
 }
 
 func (b Booking) EffectiveStatus() BookingStatus {
@@ -410,9 +411,10 @@ func (s *Store) Review(ctx context.Context, bookingID string, action ReviewActio
 		}
 
 		return ReviewResult{
-			Booking:      *target,
-			Updated:      updated,
-			CallbackText: "Заявка подтверждена, слот закрыт на сайте",
+			Booking:                 *target,
+			Updated:                 updated,
+			CallbackText:            "Заявка подтверждена, слот закрыт на сайте",
+			TransitionedToConfirmed: true,
 		}, nil
 
 	case ReviewActionReject:

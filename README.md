@@ -19,6 +19,9 @@ go run ./cmd/psy
 - `TELEGRAM_URL` - ссылка на Telegram.
 - `TG_BOT_TOKEN` - token Telegram-бота для уведомлений о новых заявках.
 - `TG_NOTIFY_CHAT_IDS` - chat ID получателей через запятую, например `123456789,-1001234567890`.
+- `RESEND_API_KEY` - API key Resend для отправки писем клиенту после подтверждения заявки.
+- `EMAIL_FROM` - адрес отправителя, например `Natalya Kudinova <booking@kudinovanatalya-psy.ru>`.
+- `EMAIL_REPLY_TO` - адрес для ответов на письма, например `natalia.kudinova.psy@gmail.com`.
 - `MAX_URL` - ссылка на MAX, сейчас оставлена как настраиваемая заглушка.
 - `CALENDAR_URL` - ссылка кнопок записи, по умолчанию внутренняя страница `/booking`.
 - `USD_RATE_URL` - источник курса USD/RUB для рублевого эквивалента цены 65$.
