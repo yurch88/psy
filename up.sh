@@ -17,6 +17,7 @@ APP_DIR="${APP_DIR:-$DEPLOY_ROOT/app}"
 BIN_DIR="${BIN_DIR:-$DEPLOY_ROOT/bin}"
 DATA_DIR="${DATA_DIR:-$DEPLOY_ROOT/data}"
 ENV_FILE="${ENV_FILE:-$DEPLOY_ROOT/.env}"
+BOOTSTRAP_TARGET="${BOOTSTRAP_TARGET:-/home/up.sh}"
 
 REPO_URL="${REPO_URL:-https://github.com/yurch88/psy.git}"
 BRANCH="${BRANCH:-main}"
@@ -98,6 +99,14 @@ detect_arch() {
 
 version_number() {
   "$1" version 2>/dev/null | awk '{print $3}' | sed 's/^go//' || true
+}
+
+canonical_path() {
+  if have readlink; then
+    readlink -f "$1" 2>/dev/null || printf '%s' "$1"
+    return 0
+  fi
+  printf '%s' "$1"
 }
 
 http_ok() {
@@ -324,6 +333,26 @@ sync_repo() {
   git -C "$APP_DIR" checkout "$BRANCH"
   git -C "$APP_DIR" reset --hard "$REMOTE/$BRANCH"
   git -C "$APP_DIR" clean -fd
+}
+
+refresh_bootstrap_script() {
+  local repo_script current_script target_script
+
+  repo_script="$APP_DIR/up.sh"
+  [[ -f "$repo_script" ]] || return 0
+
+  current_script="$(canonical_path "$0")"
+  target_script="$(canonical_path "$BOOTSTRAP_TARGET")"
+
+  if ! cmp -s "$repo_script" "$target_script" 2>/dev/null; then
+    info "updating bootstrap deploy script: $target_script"
+    install -m 755 "$repo_script" "$target_script"
+  fi
+
+  if [[ "${UPSH_REEXECED:-0}" != "1" ]] && ! cmp -s "$repo_script" "$current_script" 2>/dev/null; then
+    info "restarting deploy with refreshed bootstrap script"
+    exec env UPSH_REEXECED=1 bash "$target_script" "$@"
+  fi
 }
 
 build_app() {
@@ -604,10 +633,12 @@ main() {
   require_cmd systemctl
 
   ensure_user_and_dirs
-  ensure_env_file
-  create_backup
 
   sync_repo
+  refresh_bootstrap_script "$@"
+
+  ensure_env_file
+  create_backup
   build_app
 
   install_systemd_service
