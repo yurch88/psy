@@ -45,9 +45,10 @@ type Service struct {
 }
 
 type Slot struct {
-	ID    string
-	Start time.Time
-	End   time.Time
+	ID       string
+	Start    time.Time
+	End      time.Time
+	Disabled bool
 }
 
 type BookingRequest struct {
@@ -113,7 +114,7 @@ func NewService(timezone, bookingsPath string) (*Service, error) {
 	}, nil
 }
 
-func (s *Service) AvailableSlots() []Slot {
+func (s *Service) Slots() []Slot {
 	now := s.now().In(s.location)
 	startDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, s.location)
 	bookedSlots := s.store.ConfirmedSlotIDs()
@@ -137,19 +138,28 @@ func (s *Service) AvailableSlots() []Slot {
 			}
 
 			id := start.Format("20060102T1504")
-			if bookedSlots[id] {
-				continue
-			}
-
 			slots = append(slots, Slot{
-				ID:    id,
-				Start: start,
-				End:   start.Add(55 * time.Minute),
+				ID:       id,
+				Start:    start,
+				End:      start.Add(55 * time.Minute),
+				Disabled: bookedSlots[id],
 			})
 		}
 	}
 
 	return slots
+}
+
+func (s *Service) AvailableSlots() []Slot {
+	allSlots := s.Slots()
+	available := make([]Slot, 0, len(allSlots))
+	for _, slot := range allSlots {
+		if slot.Disabled {
+			continue
+		}
+		available = append(available, slot)
+	}
+	return available
 }
 
 func (s *Service) Book(ctx context.Context, request BookingRequest) (Booking, error) {

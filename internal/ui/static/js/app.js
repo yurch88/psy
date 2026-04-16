@@ -26,6 +26,7 @@
     const end = new Date(slot.dataset.end);
     const timeNode = slot.querySelector('[data-slot-time]');
     const label = `${dateFormatter.format(start)}, ${timeFormatter.format(start)}-${timeFormatter.format(end)}`;
+    const isDisabled = slot.disabled;
 
     if (timeNode) {
       timeNode.textContent = `${timeFormatter.format(start)}-${timeFormatter.format(end)}`;
@@ -33,6 +34,9 @@
     slot.dataset.label = label;
 
     slot.addEventListener('click', () => {
+      if (isDisabled) {
+        return;
+      }
       slotCards.forEach((card) => card.classList.remove('is-selected'));
       slot.classList.add('is-selected');
       if (slotInput) {
@@ -45,7 +49,7 @@
   });
 
   if (slotInput && slotInput.value) {
-    const current = slotCards.find((slot) => slot.dataset.slotId === slotInput.value);
+    const current = slotCards.find((slot) => slot.dataset.slotId === slotInput.value && !slot.disabled);
     if (current) {
       current.click();
     }

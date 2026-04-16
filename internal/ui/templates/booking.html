@@ -31,10 +31,11 @@
       <p class="timezone-line t-descr t-descr_md">Ваш часовой пояс: <strong data-timezone-label>определяется</strong></p>
       <div class="slot-grid" aria-label="Доступные временные промежутки">
         {{range .Slots}}
-          <button class="slot-card" type="button" data-slot-id="{{.ID}}" data-start="{{.StartISO}}" data-end="{{.EndISO}}">
+          <button class="slot-card{{if .Disabled}} is-disabled{{end}}" type="button" data-slot-id="{{.ID}}" data-start="{{.StartISO}}" data-end="{{.EndISO}}" {{if .Disabled}}disabled aria-disabled="true"{{end}}>
             <span class="slot-date">{{.Date}}</span>
             <span class="slot-weekday">{{.Weekday}}</span>
             <strong data-slot-time>{{.TimeRange}}</strong>
+            {{if .Disabled}}<span class="slot-status">Недоступно</span>{{end}}
           </button>
         {{end}}
       </div>

@@ -59,6 +59,13 @@ func TestConfirmBlocksSlotAndRejectsOtherPendingRequests(t *testing.T) {
 	if containsSlot(service.AvailableSlots(), slot.ID) {
 		t.Fatalf("confirmed booking should block slot %s", slot.ID)
 	}
+	disabledSlot, ok := findSlot(service.Slots(), slot.ID)
+	if !ok {
+		t.Fatalf("expected slot %s to stay visible in full slot list", slot.ID)
+	}
+	if !disabledSlot.Disabled {
+		t.Fatalf("expected confirmed slot %s to be disabled in full slot list", slot.ID)
+	}
 
 	secondReview, err := service.Review(context.Background(), second.ID, ReviewActionConfirm)
 	if err != nil {
@@ -103,6 +110,13 @@ func TestRejectKeepsSlotAvailable(t *testing.T) {
 	if !containsSlot(service.AvailableSlots(), slot.ID) {
 		t.Fatalf("rejected booking should keep slot %s available", slot.ID)
 	}
+	reopenedSlot, ok := findSlot(service.Slots(), slot.ID)
+	if !ok {
+		t.Fatalf("expected slot %s to stay visible after rejection", slot.ID)
+	}
+	if reopenedSlot.Disabled {
+		t.Fatalf("expected rejected slot %s to remain enabled", slot.ID)
+	}
 }
 
 func containsSlot(slots []Slot, target string) bool {
@@ -112,4 +126,13 @@ func containsSlot(slots []Slot, target string) bool {
 		}
 	}
 	return false
+}
+
+func findSlot(slots []Slot, target string) (Slot, bool) {
+	for _, slot := range slots {
+		if slot.ID == target {
+			return slot, true
+		}
+	}
+	return Slot{}, false
 }

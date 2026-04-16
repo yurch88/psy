@@ -936,6 +936,13 @@ svg {
   background: var(--black);
 }
 
+.slot-card.is-disabled {
+  border-color: rgba(0, 0, 0, 0.18);
+  color: rgba(0, 0, 0, 0.42);
+  background: #f0f0f0;
+  cursor: not-allowed;
+}
+
 .slot-date,
 .slot-weekday,
 .slot-card strong {
@@ -950,6 +957,15 @@ svg {
 .slot-weekday {
   margin: 3px 0 8px;
   font-size: 14px;
+}
+
+.slot-status {
+  display: block;
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-transform: uppercase;
 }
 
 .selected-slot {

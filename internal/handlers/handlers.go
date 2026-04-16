@@ -44,6 +44,7 @@ type SlotView struct {
 	TimeRange string
 	StartISO  string
 	EndISO    string
+	Disabled  bool
 }
 
 type BookingForm struct {
@@ -192,7 +193,7 @@ func (h *Handler) healthz(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) renderBooking(w http.ResponseWriter, data PageData) {
-	data.Slots = h.slotViews(h.calendar.AvailableSlots())
+	data.Slots = h.slotViews(h.calendar.Slots())
 	h.render(w, "booking", data)
 }
 
@@ -215,6 +216,7 @@ func (h *Handler) slotViews(slots []calendar.Slot) []SlotView {
 			TimeRange: slot.Start.Format("15:04") + "-" + slot.End.Format("15:04"),
 			StartISO:  slot.Start.Format(time.RFC3339),
 			EndISO:    slot.End.Format(time.RFC3339),
+			Disabled:  slot.Disabled,
 		})
 	}
 	return views
