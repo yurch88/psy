@@ -410,13 +410,16 @@ refresh_bootstrap_script() {
 
 build_app() {
   info "building app"
+  local go_cgo_enabled
+
   export PATH="$GO_ROOT/bin:$PATH"
+  go_cgo_enabled="${CGO_ENABLED:-0}"
 
   if [[ "$RUN_TESTS" == "1" ]]; then
-    (cd "$APP_DIR" && go test ./...)
+    (cd "$APP_DIR" && CGO_ENABLED="$go_cgo_enabled" go test ./...)
   fi
 
-  (cd "$APP_DIR" && go build -trimpath -ldflags="-s -w" -o "$APP_BIN" ./cmd/psy)
+  (cd "$APP_DIR" && CGO_ENABLED="$go_cgo_enabled" go build -trimpath -ldflags="-s -w" -o "$APP_BIN" ./cmd/psy)
   chown "$APP_USER:$APP_GROUP" "$APP_BIN"
   chmod 750 "$APP_BIN"
 }
