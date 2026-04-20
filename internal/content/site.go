@@ -16,6 +16,7 @@ func DefaultSite(contact Contact) Site {
 		Home:    homePage(),
 		Rules:   rulesPage(),
 		Memo:    memoPage(),
+		Privacy: privacyPage(),
 		Booking: bookingPage(),
 	}
 }

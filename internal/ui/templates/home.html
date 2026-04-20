@@ -72,11 +72,8 @@
 <section class="r t-rec t-rec_pt_75 t-rec_pb_75 values-record">
   <div class="t006">
     <div class="t-container">
-      <div class="t006__line_top">
-        <div class="t006__uptitle-wrapper">
-          <div class="t006__uptitle t-uptitle t-uptitle_md">Мои ценности</div>
-        </div>
-        <div class="t-divider t-divider_top"></div>
+      <div class="values-badge-row">
+        <div class="values-badge t-uptitle t-uptitle_md">Мои ценности</div>
       </div>
       <div class="t006__text-impact t-text-impact t-text-impact_md">
         {{range .Site.Home.Values}}
@@ -94,14 +91,21 @@
       <div class="t489__top">
         <h2 class="t489__title t-title t-title_md">Компетенции и квалификации</h2>
       </div>
-      <div class="t489__descr t-descr t-descr_md">
+      <div class="t489__descr t-descr t-descr_md qualification-stack">
         {{range .Site.Home.Qualifications}}
-          <p><strong>{{.Title}}</strong></p>
-          {{range .Items}}<p>{{.}}</p>{{end}}
-          <br>
+          <div class="qualification-group">
+            <p class="qualification-group__title">{{.Title}}</p>
+            <div class="qualification-group__items">
+              {{range .Items}}<p>{{.}}</p>{{end}}
+            </div>
+          </div>
         {{end}}
-        <p><strong>Профессиональные стандарты</strong></p>
-        {{range .Site.Home.Standards}}<p>{{.}}</p>{{end}}
+        <div class="qualification-group qualification-group-standards">
+          <p class="qualification-group__title">Профессиональные стандарты</p>
+          <div class="qualification-group__items">
+            {{range .Site.Home.Standards}}<p>{{.}}</p>{{end}}
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -140,10 +144,9 @@
         <article class="t812__pricelist-item">
           <div class="t812__pricelist-item__row_1">
             <h3 class="t812__pricelist-item__title t-name t-name_sm">{{.Title}}</h3>
-            <div class="t812__pricelist-item__price t-name t-name_sm">{{.Price}}</div>
+            <div class="t812__pricelist-item__price t-name t-name_sm">{{if and .DynamicNote $.WorldPrice}}{{$.WorldPrice}}{{else}}{{.Price}}{{end}}</div>
           </div>
           <div class="t-divider t812__pricelist-item__line"></div>
-          {{if and .DynamicNote $.USDNote}}<div class="price-note">{{$.USDNote}}</div>{{end}}
           <p class="t812__pricelist-item__descr t-descr t-descr_xs">{{.Text}}</p>
         </article>
       {{end}}
@@ -169,6 +172,12 @@
     <a class="t-btn t-btnflex t-btnflex_type_button t-btnflex_md" href="/memo">
       <span class="t-btnflex__text">ПАМЯТКА ДЛЯ ПОДГОТОВКИ К ОНЛАЙН-ВСТРЕЧЕ</span>
     </a>
+  </div>
+</section>
+
+<section class="r t-rec t-rec_pt_15 t-rec_pb_15 ornament-record" aria-hidden="true">
+  <div class="t-container">
+    <div class="ornament-divider"><span>&#10086;</span></div>
   </div>
 </section>
 

@@ -17,6 +17,7 @@ type Site struct {
 	Home        HomePage
 	Rules       TextPage
 	Memo        MemoPage
+	Privacy     TextPage
 	Booking     BookingPage
 }
 

@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"math"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 )
 
-const consultationUSD = 65
+const (
+	consultationUSD    = 65
+	consultationMinRUB = 5000
+)
 
 type Service struct {
 	url     string
@@ -34,14 +36,18 @@ func NewService(url string, timeout time.Duration) *Service {
 	}
 }
 
-func (s *Service) RubleEquivalent(ctx context.Context) (string, bool) {
+func (s *Service) ConsultationUSD(ctx context.Context) (string, bool) {
 	rate, ok := s.usdRate(ctx)
 	if !ok {
 		return "", false
 	}
 
-	rounded := int(math.Round(rate*consultationUSD/100) * 100)
-	return fmt.Sprintf("примерно %s ₽ по текущему курсу", formatInt(rounded)), true
+	price := int(math.Ceil(consultationMinRUB / rate))
+	if price < consultationUSD {
+		price = consultationUSD
+	}
+
+	return fmt.Sprintf("%d $", price), true
 }
 
 func (s *Service) usdRate(ctx context.Context) (float64, bool) {
@@ -92,20 +98,4 @@ func (s *Service) usdRate(ctx context.Context) (float64, bool) {
 	s.mu.Unlock()
 
 	return payload.Valute.USD.Value, true
-}
-
-func formatInt(value int) string {
-	raw := strconv.Itoa(value)
-	if len(raw) <= 3 {
-		return raw
-	}
-
-	result := make([]byte, 0, len(raw)+len(raw)/3)
-	for i := range raw {
-		if i > 0 && (len(raw)-i)%3 == 0 {
-			result = append(result, ' ')
-		}
-		result = append(result, raw[i])
-	}
-	return string(result)
 }

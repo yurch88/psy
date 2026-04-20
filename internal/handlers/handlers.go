@@ -30,7 +30,7 @@ type PageData struct {
 	Title       string
 	Description string
 	Site        content.Site
-	USDNote     string
+	WorldPrice  string
 	SlotDays    []SlotDayView
 	Form        BookingForm
 	Errors      []string
@@ -75,6 +75,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/", h.home)
 	mux.HandleFunc("/rules", h.rules)
 	mux.HandleFunc("/memo", h.memo)
+	mux.HandleFunc("/privacy", h.privacy)
 	mux.HandleFunc("/booking", h.booking)
 	mux.HandleFunc("/booking/submit", h.submitBooking)
 	mux.HandleFunc("/healthz", h.healthz)
@@ -89,12 +90,12 @@ func (h *Handler) home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	usdNote, _ := h.rates.RubleEquivalent(r.Context())
+	worldPrice, _ := h.rates.ConsultationUSD(r.Context())
 	h.render(w, "home", PageData{
 		Title:       h.site.Brand,
 		Description: h.site.Description,
 		Site:        h.site,
-		USDNote:     usdNote,
+		WorldPrice:  worldPrice,
 	})
 }
 
@@ -116,6 +117,17 @@ func (h *Handler) memo(w http.ResponseWriter, r *http.Request) {
 	h.render(w, "memo", PageData{
 		Title:       h.site.Memo.Title + " - " + h.site.Brand,
 		Description: h.site.Memo.Subtitle,
+		Site:        h.site,
+	})
+}
+
+func (h *Handler) privacy(w http.ResponseWriter, r *http.Request) {
+	if !requireMethod(w, r, http.MethodGet) {
+		return
+	}
+	h.render(w, "privacy", PageData{
+		Title:       h.site.Privacy.Title + " - " + h.site.Brand,
+		Description: h.site.Privacy.Subtitle,
 		Site:        h.site,
 	})
 }

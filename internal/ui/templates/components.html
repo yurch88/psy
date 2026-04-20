@@ -29,12 +29,14 @@
     <div class="t-col t-col_12">
       <div class="t471__descr t-descr t-descr_xxxl t-margin_auto">
         <strong>Способы связи</strong><br><br>
-        <span>Пожалуйста, используйте Telegram, MAX или запишитесь ко мне, выбрав удобное время в календаре. Ссылки ниже.</span>
+        <span>Пожалуйста, используйте удобный способ связи или запишитесь ко мне, выбрав подходящее время в календаре.</span>
       </div>
       <div class="t-sociallinks">
         <ul class="t-sociallinks__wrapper" aria-label="Ссылки для связи">
           <li><a class="social-circle" href="{{.Site.Contact.TelegramURL}}" target="_blank" rel="noopener" aria-label="Telegram">{{template "iconTelegram" .}}</a></li>
-          <li><a class="social-circle" href="{{.Site.Contact.MaxURL}}" aria-label="MAX">{{template "iconMax" .}}</a></li>
+          {{if and .Site.Contact.MaxURL (ne .Site.Contact.MaxURL "#contacts")}}
+            <li><a class="social-circle" href="{{.Site.Contact.MaxURL}}" target="_blank" rel="noopener" aria-label="MAX">{{template "iconMax" .}}</a></li>
+          {{end}}
           <li><a class="social-circle" href="{{.Site.Contact.CalendarURL}}" aria-label="Календарь">{{template "iconCalendar" .}}</a></li>
           <li><a class="social-circle" href="mailto:{{.Site.Contact.Email}}" aria-label="E-mail">{{template "iconMail" .}}</a></li>
         </ul>
@@ -52,6 +54,10 @@
       <a href="/rules">Правила</a>
       <a href="/memo">Памятка</a>
     </nav>
+    <div class="footer-legal">
+      <div class="footer-legal__title">Юридическая информация</div>
+      <a href="/privacy">Политика в отношении обработки персональных данных</a>
+    </div>
     <div class="footer-logo t-title">{{.Site.Brand}}</div>
     <div class="footer-copy">
       © Кудинова Наталья Борисовна<br>

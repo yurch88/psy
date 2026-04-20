@@ -1,0 +1,33 @@
+{{define "content"}}
+<section class="r t-rec t-rec_pt_45 t-rec_pb_30 page-title-record">
+  <div class="t050">
+    <div class="t-container t-align_center">
+      <h1 class="t050__title t-title t-title_xxl">{{.Site.Privacy.Title}}</h1>
+      <div class="t050__descr t-descr t-descr_xxl">{{.Site.Privacy.Subtitle}}</div>
+    </div>
+  </div>
+</section>
+
+<section class="r t-rec t-rec_pt_0 t-rec_pb_30 t220-record privacy-intro-record">
+  <div class="t220">
+    <div class="t-container">
+      <div class="t220__textwrapper">
+        {{range .Site.Privacy.Lead}}<p class="t220__text t-text t-text_md">{{.}}</p>{{end}}
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="r t-rec t-rec_pt_30 t-rec_pb_60 privacy-record">
+  <div class="t512">
+    <div class="t-container privacy-stack">
+      {{range .Site.Privacy.Blocks}}
+        <article class="privacy-block">
+          <h2 class="t-title t-title_xs">{{.Title}}</h2>
+          {{range .Paragraphs}}<p class="t-descr t-descr_sm">{{.}}</p>{{end}}
+        </article>
+      {{end}}
+    </div>
+  </div>
+</section>
+{{end}}
