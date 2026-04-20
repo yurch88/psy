@@ -821,16 +821,8 @@ svg {
 }
 
 .footer-legal {
-  display: grid;
-  gap: 8px;
+  display: block;
   margin-top: 24px;
-}
-
-.footer-legal__title {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0;
-  text-transform: uppercase;
 }
 
 .footer-legal a {
