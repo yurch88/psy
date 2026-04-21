@@ -91,42 +91,51 @@
                   <input type="hidden" name="mode" value="date">
 
                   <div class="admin-date-builder-grid">
-                    <label>
-                      <span>Дата</span>
-                      <input name="date" type="date" value="{{if eq .AdminSlotMode "date"}}{{.AdminSlotDate}}{{end}}">
-                    </label>
+                    <div class="admin-date-panel admin-date-panel-date">
+                      <label class="admin-date-field">
+                        <span>Дата</span>
+                        <input name="date" type="date" value="{{if eq .AdminSlotMode "date"}}{{.AdminSlotDate}}{{end}}">
+                      </label>
+                      <p class="admin-date-field-hint">Сначала выберите дату, затем добавьте на неё нужные слоты.</p>
+                    </div>
 
-                    <div class="admin-date-picker">
-                      <div class="admin-date-picker__header">
-                        <div>
-                          <span class="admin-field-title">Диапазоны времени</span>
-                          <p class="admin-date-picker__text">Выберите нужный диапазон в ленте и нажмите «Добавить».</p>
+                    <div class="admin-date-panel admin-date-panel-picker">
+                      <div class="admin-date-picker">
+                        <div class="admin-date-picker__header">
+                          <div>
+                            <span class="admin-field-title">Диапазоны времени</span>
+                            <p class="admin-date-picker__text">Выберите нужный диапазон в ленте и нажмите «Добавить».</p>
+                          </div>
+                          <div class="admin-carousel-controls">
+                            <button class="admin-carousel-button" type="button" data-date-slot-prev aria-label="Прокрутить влево">‹</button>
+                            <button class="admin-carousel-button" type="button" data-date-slot-next aria-label="Прокрутить вправо">›</button>
+                          </div>
                         </div>
-                        <div class="admin-carousel-controls">
-                          <button class="admin-carousel-button" type="button" data-date-slot-prev aria-label="Прокрутить влево">‹</button>
-                          <button class="admin-carousel-button" type="button" data-date-slot-next aria-label="Прокрутить вправо">›</button>
+
+                        <div class="admin-slot-carousel-shell">
+                          <div class="admin-slot-carousel" data-date-slot-carousel>
+                            {{range .AdminDateSlotOptions}}
+                              <button class="admin-slot-pill" type="button" data-date-slot-option="{{.Value}}" data-date-slot-label="{{.Label}}">{{.Label}}</button>
+                            {{end}}
+                          </div>
                         </div>
-                      </div>
 
-                      <div class="admin-slot-carousel" data-date-slot-carousel>
-                        {{range .AdminDateSlotOptions}}
-                          <button class="admin-slot-pill" type="button" data-date-slot-option="{{.Value}}" data-date-slot-label="{{.Label}}">{{.Label}}</button>
-                        {{end}}
-                      </div>
-
-                      <div class="admin-date-actions">
-                        <p class="admin-current-slot" data-date-slot-current>Сначала выберите диапазон времени</p>
-                        <button class="admin-link-button admin-link-button-strong" type="button" data-date-slot-add>Добавить</button>
+                        <div class="admin-date-actions">
+                          <p class="admin-current-slot" data-date-slot-current>Сначала выберите диапазон времени</p>
+                          <button class="admin-link-button admin-link-button-strong" type="button" data-date-slot-add>Добавить</button>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div class="admin-selected-slots">
+                  <div class="admin-selected-slots admin-date-panel">
                     <div class="admin-selected-slots__header">
                       <span class="admin-field-title">Выбранные слоты на эту дату</span>
                       <button class="admin-link-button" type="button" data-date-slot-clear>Очистить</button>
                     </div>
-                    <div class="admin-selected-slots__list" data-date-slot-selected></div>
+                    <div class="admin-selected-slots__box">
+                      <div class="admin-selected-slots__list" data-date-slot-selected></div>
+                    </div>
                     <textarea name="times" hidden data-date-slot-times>{{if eq .AdminSlotMode "date"}}{{.AdminSlotTimes}}{{end}}</textarea>
                   </div>
 
