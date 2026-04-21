@@ -153,15 +153,13 @@ func applyContentSection(site *content.Site, section string, r *http.Request) er
 		}
 		return nil
 	case "home":
-		site.Home.HeroImage = content.Image{Src: strings.TrimSpace(r.FormValue("home_hero_src")), Alt: strings.TrimSpace(r.FormValue("home_hero_alt"))}
 		site.Home.Headline = strings.TrimSpace(r.FormValue("home_headline"))
 		site.Home.Subheadline = strings.TrimSpace(r.FormValue("home_subheadline"))
 		site.Home.SupportText = strings.TrimSpace(r.FormValue("home_support_text"))
-		site.Home.About.Image = content.Image{Src: strings.TrimSpace(r.FormValue("about_image_src")), Alt: strings.TrimSpace(r.FormValue("about_image_alt"))}
 		site.Home.About.Lead = splitTextareaLines(r.FormValue("about_lead"))
 		site.Home.About.ButtonText = strings.TrimSpace(r.FormValue("about_button_text"))
 
-		stats, err := parseMetrics(r.FormValue("stats"))
+		stats, err := parseMetrics(r.FormValue("stats"), site.Home.Stats)
 		if err != nil {
 			return err
 		}
@@ -173,7 +171,19 @@ func applyContentSection(site *content.Site, section string, r *http.Request) er
 		if err != nil {
 			return err
 		}
-		pricing, err := parsePricing(r.FormValue("pricing"))
+
+		site.Home.Stats = stats
+		site.Home.Values = values
+		site.Home.Qualifications = qualifications
+		site.Home.Standards = splitTextareaLines(r.FormValue("standards"))
+		site.Home.ReviewPhilosophy = content.ImageText{
+			Image:      site.Home.ReviewPhilosophy.Image,
+			Title:      strings.TrimSpace(r.FormValue("review_title")),
+			Paragraphs: splitTextareaLines(r.FormValue("review_paragraphs")),
+		}
+		return nil
+	case "pricing":
+		pricing, err := parsePricing(r.FormValue("pricing"), site.Home.Pricing)
 		if err != nil {
 			return err
 		}
@@ -181,26 +191,15 @@ func applyContentSection(site *content.Site, section string, r *http.Request) er
 		if err != nil {
 			return err
 		}
-
-		site.Home.Stats = stats
-		site.Home.Values = values
-		site.Home.Qualifications = qualifications
-		site.Home.Standards = splitTextareaLines(r.FormValue("standards"))
-		site.Home.ReviewPhilosophy = content.ImageText{
-			Image:      content.Image{Src: strings.TrimSpace(r.FormValue("review_image_src")), Alt: strings.TrimSpace(r.FormValue("review_image_alt"))},
-			Title:      strings.TrimSpace(r.FormValue("review_title")),
-			Paragraphs: splitTextareaLines(r.FormValue("review_paragraphs")),
-		}
 		site.Home.Pricing = pricing
 		site.Home.FAQ = faq
 		return nil
 	case "booking":
 		site.Booking.Title = strings.TrimSpace(r.FormValue("booking_title"))
-		site.Booking.Image = content.Image{Src: strings.TrimSpace(r.FormValue("booking_image_src")), Alt: strings.TrimSpace(r.FormValue("booking_image_alt"))}
 		site.Booking.Description = splitTextareaLines(r.FormValue("booking_description"))
 		return nil
 	case "memo":
-		blocks, err := parseImageTexts(r.FormValue("memo_blocks"))
+		blocks, err := parseImageTexts(r.FormValue("memo_blocks"), site.Memo.Blocks)
 		if err != nil {
 			return err
 		}
@@ -300,56 +299,60 @@ func parseTitledLists(value string) ([]content.TitledList, error) {
 }
 
 func formatMetrics(items []content.Metric) string {
-	lines := make([]string, 0, len(items))
+	blocks := make([]string, 0, len(items))
 	for _, item := range items {
-		lines = append(lines, strings.Join([]string{item.Prefix, item.Value, item.Label, item.Icon}, " | "))
+		lines := []string{item.Prefix, item.Value, item.Label}
+		blocks = append(blocks, strings.Join(lines, "\n"))
 	}
-	return strings.Join(lines, "\n")
+	return strings.Join(blocks, "\n\n")
 }
 
-func parseMetrics(value string) ([]content.Metric, error) {
-	lines := splitTextareaLines(value)
-	result := make([]content.Metric, 0, len(lines))
-	for _, line := range lines {
-		parts := splitPipeLine(line, 4)
-		if len(parts) != 4 {
-			return nil, fmt.Errorf("Строка метрики должна быть в формате: префикс | значение | подпись | иконка")
+func parseMetrics(value string, existing []content.Metric) ([]content.Metric, error) {
+	blocks := splitBlocks(value)
+	if len(blocks) != len(existing) {
+		return nil, fmt.Errorf("Количество метрик должно оставаться таким же, чтобы сохранить текущие иконки.")
+	}
+	result := make([]content.Metric, 0, len(blocks))
+	for index, block := range blocks {
+		lines := splitTextareaLines(block)
+		if len(lines) < 3 {
+			return nil, fmt.Errorf("Каждая метрика должна содержать вступление, значение и подпись.")
 		}
 		result = append(result, content.Metric{
-			Prefix: parts[0],
-			Value:  parts[1],
-			Label:  parts[2],
-			Icon:   parts[3],
+			Prefix: lines[0],
+			Value:  lines[1],
+			Label:  strings.Join(lines[2:], " "),
+			Icon:   existing[index].Icon,
 		})
 	}
 	return result, nil
 }
 
 func formatPricing(items []content.PriceCard) string {
-	lines := make([]string, 0, len(items))
+	blocks := make([]string, 0, len(items))
 	for _, item := range items {
-		dynamic := "0"
-		if item.DynamicNote {
-			dynamic = "1"
-		}
-		lines = append(lines, strings.Join([]string{item.Title, item.Price, dynamic, item.Text}, " | "))
+		lines := []string{item.Title, item.Price, item.Text}
+		blocks = append(blocks, strings.Join(lines, "\n"))
 	}
-	return strings.Join(lines, "\n")
+	return strings.Join(blocks, "\n\n")
 }
 
-func parsePricing(value string) ([]content.PriceCard, error) {
-	lines := splitTextareaLines(value)
-	result := make([]content.PriceCard, 0, len(lines))
-	for _, line := range lines {
-		parts := splitPipeLine(line, 4)
-		if len(parts) != 4 {
-			return nil, fmt.Errorf("Строка цены должна быть в формате: название | цена | 0/1 динамический курс | описание")
+func parsePricing(value string, existing []content.PriceCard) ([]content.PriceCard, error) {
+	blocks := splitBlocks(value)
+	if len(blocks) != len(existing) {
+		return nil, fmt.Errorf("Количество карточек с ценами должно оставаться таким же.")
+	}
+	result := make([]content.PriceCard, 0, len(blocks))
+	for index, block := range blocks {
+		lines := splitTextareaLines(block)
+		if len(lines) < 3 {
+			return nil, fmt.Errorf("Каждая карточка с ценой должна содержать название, сумму и описание.")
 		}
 		result = append(result, content.PriceCard{
-			Title:       parts[0],
-			Price:       parts[1],
-			DynamicNote: parts[2] == "1",
-			Text:        parts[3],
+			Title:       lines[0],
+			Price:       lines[1],
+			DynamicNote: existing[index].DynamicNote,
+			Text:        strings.Join(lines[2:], " "),
 		})
 	}
 	return result, nil
@@ -383,41 +386,29 @@ func parseTextBlocks(value string) ([]content.TextBlock, error) {
 func formatImageTexts(items []content.ImageText) string {
 	blocks := make([]string, 0, len(items))
 	for _, item := range items {
-		lines := []string{item.Title, item.Image.Src, item.Image.Alt}
+		lines := []string{item.Title}
 		lines = append(lines, item.Paragraphs...)
 		blocks = append(blocks, strings.Join(lines, "\n"))
 	}
 	return strings.Join(blocks, "\n\n")
 }
 
-func parseImageTexts(value string) ([]content.ImageText, error) {
+func parseImageTexts(value string, existing []content.ImageText) ([]content.ImageText, error) {
 	blocks := splitBlocks(value)
+	if len(blocks) != len(existing) {
+		return nil, fmt.Errorf("Количество текстовых блоков памятки должно оставаться таким же, чтобы сохранить текущие изображения.")
+	}
 	result := make([]content.ImageText, 0, len(blocks))
-	for _, block := range blocks {
+	for index, block := range blocks {
 		lines := splitTextareaLines(block)
-		if len(lines) < 4 {
-			return nil, fmt.Errorf("Каждый блок памятки должен содержать заголовок, путь к картинке, alt и минимум один абзац.")
+		if len(lines) < 2 {
+			return nil, fmt.Errorf("Каждый блок памятки должен содержать заголовок и минимум один абзац.")
 		}
 		result = append(result, content.ImageText{
-			Title: lines[0],
-			Image: content.Image{
-				Src: lines[1],
-				Alt: lines[2],
-			},
-			Paragraphs: lines[3:],
+			Title:      lines[0],
+			Image:      existing[index].Image,
+			Paragraphs: lines[1:],
 		})
 	}
 	return result, nil
-}
-
-func splitPipeLine(line string, expected int) []string {
-	parts := strings.Split(line, "|")
-	result := make([]string, 0, len(parts))
-	for _, part := range parts {
-		result = append(result, strings.TrimSpace(part))
-	}
-	if len(result) != expected {
-		return nil
-	}
-	return result
 }

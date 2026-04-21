@@ -126,7 +126,7 @@ func adminTab(value string) string {
 
 func adminContentSection(value string) string {
 	switch strings.TrimSpace(value) {
-	case "main", "home", "booking", "memo", "rules", "privacy":
+	case "main", "home", "pricing", "booking", "memo", "rules", "privacy":
 		return value
 	default:
 		return "main"

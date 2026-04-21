@@ -12,7 +12,7 @@
             </nav>
             <form method="post" action="/administrator/logout">
               <button class="t-btn t-btnflex t-btnflex_type_button t-btnflex_md admin-logout" type="submit">
-                <span class="t-btnflex__text">ВЫЙТИ</span>
+                <span class="t-btnflex__text">Выйти</span>
               </button>
             </form>
           </div>
@@ -30,67 +30,108 @@
 
           {{if eq .AdminTab "calendar"}}
             <div class="admin-section-header">
-              <h1 class="t-title t-title_xxl">Календарь слотов</h1>
-              <p class="t-descr t-descr_md admin-subtitle">Создавайте слоты на конкретные даты или закрепляйте их на повторяющиеся дни недели. Каждый слот длится 55 минут и должен укладываться в диапазон 09:00–22:30.</p>
+              <div>
+                <p class="admin-eyebrow">Администрирование календаря</p>
+                <h1 class="t-title t-title_xxl">Слоты для записи</h1>
+                <p class="t-descr t-descr_md admin-subtitle">Настраивайте повторяющийся график по дням недели и отдельные слоты на конкретные даты. Все слоты автоматически остаются в рабочем диапазоне с 09:00 до 22:30 и длятся 55 минут.</p>
+              </div>
+              <div class="admin-pill-note">График работы: 09:00–22:30</div>
             </div>
 
             <div class="admin-grid admin-grid-2">
               <div class="admin-block">
-                <h2 class="t-heading t-heading_md">Добавить слоты</h2>
+                <div class="admin-block__header">
+                  <p class="admin-block__eyebrow">Повторяющийся график</p>
+                  <h2 class="t-heading t-heading_md">Слоты по дням недели</h2>
+                  <p class="admin-block__intro">Используйте этот блок, если одно и то же время должно повторяться каждую неделю.</p>
+                </div>
+
                 <form class="admin-form" method="post" action="/administrator/slots/create">
-                  <label>
-                    <span>Режим</span>
-                    <select name="mode">
-                      <option value="weekly" {{if eq .AdminSlotMode "weekly"}}selected{{end}}>Каждую неделю</option>
-                      <option value="date" {{if eq .AdminSlotMode "date"}}selected{{end}}>Только на конкретную дату</option>
-                    </select>
-                  </label>
+                  <input type="hidden" name="mode" value="weekly">
 
                   <div class="admin-weekdays">
-                    <span>Дни недели</span>
-                    <label><input type="checkbox" name="weekday" value="1" {{if containsInt .AdminSlotWeekdays 1}}checked{{end}}> Пн</label>
-                    <label><input type="checkbox" name="weekday" value="2" {{if containsInt .AdminSlotWeekdays 2}}checked{{end}}> Вт</label>
-                    <label><input type="checkbox" name="weekday" value="3" {{if containsInt .AdminSlotWeekdays 3}}checked{{end}}> Ср</label>
-                    <label><input type="checkbox" name="weekday" value="4" {{if containsInt .AdminSlotWeekdays 4}}checked{{end}}> Чт</label>
-                    <label><input type="checkbox" name="weekday" value="5" {{if containsInt .AdminSlotWeekdays 5}}checked{{end}}> Пт</label>
-                    <label><input type="checkbox" name="weekday" value="6" {{if containsInt .AdminSlotWeekdays 6}}checked{{end}}> Сб</label>
-                    <label><input type="checkbox" name="weekday" value="7" {{if containsInt .AdminSlotWeekdays 7}}checked{{end}}> Вс</label>
+                    <span class="admin-field-title">Выберите дни недели</span>
+                    <label><input type="checkbox" name="weekday" value="1" {{if containsInt .AdminSlotWeekdays 1}}checked{{end}}> <span>Понедельник</span></label>
+                    <label><input type="checkbox" name="weekday" value="2" {{if containsInt .AdminSlotWeekdays 2}}checked{{end}}> <span>Вторник</span></label>
+                    <label><input type="checkbox" name="weekday" value="3" {{if containsInt .AdminSlotWeekdays 3}}checked{{end}}> <span>Среда</span></label>
+                    <label><input type="checkbox" name="weekday" value="4" {{if containsInt .AdminSlotWeekdays 4}}checked{{end}}> <span>Четверг</span></label>
+                    <label><input type="checkbox" name="weekday" value="5" {{if containsInt .AdminSlotWeekdays 5}}checked{{end}}> <span>Пятница</span></label>
+                    <label><input type="checkbox" name="weekday" value="6" {{if containsInt .AdminSlotWeekdays 6}}checked{{end}}> <span>Суббота</span></label>
+                    <label><input type="checkbox" name="weekday" value="7" {{if containsInt .AdminSlotWeekdays 7}}checked{{end}}> <span>Воскресенье</span></label>
                   </div>
 
                   <label>
-                    <span>Конкретная дата</span>
-                    <input name="date" type="date" value="{{.AdminSlotDate}}">
+                    <span>Время начала слотов</span>
+                    <textarea name="times" rows="7" placeholder="09:00&#10;10:15&#10;13:35">{{if eq .AdminSlotMode "weekly"}}{{.AdminSlotTimes}}{{end}}</textarea>
                   </label>
 
-                  <label>
-                    <span>Время слотов, по одному в строке</span>
-                    <textarea name="times" rows="8" placeholder="09:00&#10;09:15&#10;09:35">{{.AdminSlotTimes}}</textarea>
-                  </label>
+                  <div class="admin-format">
+                    <strong>Как заполнять</strong>
+                    <p>Каждое время указывайте с новой строки. Например, если по понедельникам нужны приёмы в 09:00, 10:15 и 13:35, просто впишите эти три строки.</p>
+                  </div>
 
                   <button class="t-btn t-btnflex t-btnflex_type_bbutton t-btnflex_md admin-submit" type="submit">
-                    <span class="t-btnflex__text">СОХРАНИТЬ СЛОТЫ</span>
+                    <span class="t-btnflex__text">Сохранить по дням недели</span>
                   </button>
                 </form>
               </div>
 
               <div class="admin-block">
-                <h2 class="t-heading t-heading_md">Текущие правила</h2>
+                <div class="admin-block__header">
+                  <p class="admin-block__eyebrow">Разовое расписание</p>
+                  <h2 class="t-heading t-heading_md">Слоты на конкретную дату</h2>
+                  <p class="admin-block__intro">Используйте этот блок для точечных изменений: разовый рабочий день, переносы, дополнительные окна или нестандартное расписание.</p>
+                </div>
+
+                <form class="admin-form" method="post" action="/administrator/slots/create">
+                  <input type="hidden" name="mode" value="date">
+
+                  <label>
+                    <span>Дата</span>
+                    <input name="date" type="date" value="{{if eq .AdminSlotMode "date"}}{{.AdminSlotDate}}{{end}}">
+                  </label>
+
+                  <label>
+                    <span>Время начала слотов</span>
+                    <textarea name="times" rows="7" placeholder="11:00&#10;14:15&#10;19:20">{{if eq .AdminSlotMode "date"}}{{.AdminSlotTimes}}{{end}}</textarea>
+                  </label>
+
+                  <div class="admin-format">
+                    <strong>Как заполнять</strong>
+                    <p>Каждое время указывайте с новой строки. Этот набор слотов будет действовать только на выбранную дату.</p>
+                  </div>
+
+                  <button class="t-btn t-btnflex t-btnflex_type_bbutton t-btnflex_md admin-submit" type="submit">
+                    <span class="t-btnflex__text">Сохранить на дату</span>
+                  </button>
+                </form>
+              </div>
+
+              <div class="admin-block admin-block-wide">
+                <div class="admin-block__header">
+                  <p class="admin-block__eyebrow">Активные правила</p>
+                  <h2 class="t-heading t-heading_md">Что сейчас опубликовано в календаре</h2>
+                  <p class="admin-block__intro">Здесь отображаются все действующие настройки слотов. Любое правило можно удалить отдельной кнопкой.</p>
+                </div>
+
                 {{if .AdminSlotRules}}
-                  <div class="admin-list">
+                  <div class="admin-list admin-list-rules">
                     {{range .AdminSlotRules}}
                       <article class="admin-list-card">
-                        <p><strong>{{.ScopeLabel}}</strong></p>
-                        <p>{{.PatternLabel}}</p>
-                        <p>Время: {{.TimesLabel}}</p>
+                        <div class="admin-list-card__content">
+                          <span class="admin-badge">{{.ScopeLabel}}</span>
+                          <p class="admin-list-card__title">{{.PatternLabel}}</p>
+                          <p class="admin-list-card__text">Время начала: {{.TimesLabel}}</p>
+                        </div>
                         <form method="post" action="/administrator/slots/delete">
                           <input type="hidden" name="rule_id" value="{{.ID}}">
-                          <button class="admin-link-button" type="submit">Удалить правило</button>
+                          <button class="admin-link-button" type="submit">Удалить</button>
                         </form>
                       </article>
                     {{end}}
                   </div>
                 {{else}}
-                  <div class="admin-empty"><p class="t-descr t-descr_md">Пока правил нет.</p></div>
+                  <div class="admin-empty"><p class="t-descr t-descr_md">Пока активных правил нет.</p></div>
                 {{end}}
               </div>
             </div>
@@ -98,8 +139,11 @@
 
           {{if eq .AdminTab "bookings"}}
             <div class="admin-section-header">
-              <h1 class="t-title t-title_xxl">Список броней</h1>
-              <p class="t-descr t-descr_md admin-subtitle">Все заявки с контактами, комментариями и управлением: отмена и перенос слота.</p>
+              <div>
+                <p class="admin-eyebrow">Управление заявками</p>
+                <h1 class="t-title t-title_xxl">Список броней</h1>
+                <p class="t-descr t-descr_md admin-subtitle">Все заявки собраны в одном месте: дата, время, ФИО, контакты, комментарий, а также отмена и перенос записи с уведомлением клиента по почте.</p>
+              </div>
             </div>
 
             {{if .AdminBookings}}
@@ -123,7 +167,7 @@
                     </div>
 
                     <details class="admin-manage">
-                      <summary>Управление</summary>
+                      <summary>Управление бронью</summary>
                       <div class="admin-manage__body">
                         <form class="admin-inline-form" method="post" action="/administrator/bookings/cancel">
                           <input type="hidden" name="booking_id" value="{{.ID}}">
@@ -155,14 +199,18 @@
 
           {{if eq .AdminTab "content"}}
             <div class="admin-section-header">
-              <h1 class="t-title t-title_xxl">Контент сайта</h1>
-              <p class="t-descr t-descr_md admin-subtitle">Редактируйте черновик разделами, затем публикуйте изменения на сайт одной кнопкой.</p>
+              <div>
+                <p class="admin-eyebrow">Редактор сайта</p>
+                <h1 class="t-title t-title_xxl">Контент и оформление</h1>
+                <p class="t-descr t-descr_md admin-subtitle">Редактируйте черновик по разделам, затем публикуйте изменения одной кнопкой. После публикации сайт сразу подхватит новую версию контента.</p>
+              </div>
             </div>
 
             <div class="admin-toolbar admin-toolbar-content">
               <nav class="admin-subtabs" aria-label="Разделы контента">
                 <a class="admin-subtab {{if eq .AdminContentSection "main"}}is-active{{end}}" href="/administrator?tab=content&section=main">Основное</a>
                 <a class="admin-subtab {{if eq .AdminContentSection "home"}}is-active{{end}}" href="/administrator?tab=content&section=home">Главная</a>
+                <a class="admin-subtab {{if eq .AdminContentSection "pricing"}}is-active{{end}}" href="/administrator?tab=content&section=pricing">Цены и FAQ</a>
                 <a class="admin-subtab {{if eq .AdminContentSection "booking"}}is-active{{end}}" href="/administrator?tab=content&section=booking">Запись</a>
                 <a class="admin-subtab {{if eq .AdminContentSection "memo"}}is-active{{end}}" href="/administrator?tab=content&section=memo">Памятка</a>
                 <a class="admin-subtab {{if eq .AdminContentSection "rules"}}is-active{{end}}" href="/administrator?tab=content&section=rules">Правила</a>
@@ -171,7 +219,7 @@
               <form method="post" action="/administrator/content/publish">
                 <input type="hidden" name="section" value="{{.AdminContentSection}}">
                 <button class="t-btn t-btnflex t-btnflex_type_bbutton t-btnflex_md admin-submit" type="submit">
-                  <span class="t-btnflex__text">ОПУБЛИКОВАТЬ</span>
+                  <span class="t-btnflex__text">Опубликовать</span>
                 </button>
               </form>
             </div>
@@ -179,85 +227,372 @@
             {{if eq .AdminContentSection "main"}}
               <form class="admin-form admin-content-form" method="post" action="/administrator/content/save">
                 <input type="hidden" name="section" value="main">
-                <label><span>Название сайта</span><input name="brand" value="{{.AdminContentForm.Brand}}" required></label>
-                <label><span>SEO-описание</span><textarea name="description" rows="3">{{.AdminContentForm.Description}}</textarea></label>
-                <label><span>Шрифт сайта (CSS font-family)</span><input name="font_sans" value="{{.AdminContentForm.FontSans}}"></label>
-                <label><span>E-mail</span><input name="contact_email" value="{{.AdminContentForm.ContactEmail}}" required></label>
-                <label><span>Телефон</span><input name="contact_phone" value="{{.AdminContentForm.ContactPhone}}" required></label>
-                <label><span>Локация</span><input name="contact_location" value="{{.AdminContentForm.ContactLocation}}"></label>
-                <label><span>Telegram URL</span><input name="telegram_url" value="{{.AdminContentForm.TelegramURL}}"></label>
-                <label><span>MAX URL</span><input name="max_url" value="{{.AdminContentForm.MaxURL}}"></label>
-                <label><span>URL записи</span><input name="calendar_url" value="{{.AdminContentForm.CalendarURL}}"></label>
-                <button class="t-btn t-btnflex t-btnflex_type_button t-btnflex_md" type="submit"><span class="t-btnflex__text">СОХРАНИТЬ ЧЕРНОВИК</span></button>
+
+                <section class="admin-form-card">
+                  <div class="admin-form-card__header">
+                    <h2 class="t-heading t-heading_md">Основные настройки сайта</h2>
+                    <p class="admin-form-card__text">Бренд, контакты и базовый визуальный стиль сайта.</p>
+                  </div>
+
+                  <div class="admin-grid admin-grid-2">
+                    <label>
+                      <span>Название сайта</span>
+                      <input name="brand" value="{{.AdminContentForm.Brand}}" required>
+                    </label>
+                    <label>
+                      <span>Телефон</span>
+                      <input name="contact_phone" value="{{.AdminContentForm.ContactPhone}}" required>
+                    </label>
+                  </div>
+
+                  <label>
+                    <span>SEO-описание</span>
+                    <textarea name="description" rows="3" placeholder="Короткое описание сайта для поисковой выдачи">{{.AdminContentForm.Description}}</textarea>
+                  </label>
+
+                  <label>
+                    <span>Шрифт сайта</span>
+                    <select name="font_sans">
+                      {{if and .AdminContentForm.FontSans (ne .AdminContentForm.FontSans "\"Aptos\", \"Segoe UI Variable Text\", \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif") (ne .AdminContentForm.FontSans "\"Helvetica Neue\", Helvetica, Arial, sans-serif") (ne .AdminContentForm.FontSans "\"Baskerville\", \"Times New Roman\", Georgia, serif")}}
+                        <option value="{{.AdminContentForm.FontSans}}" selected>Текущий пользовательский вариант</option>
+                      {{end}}
+                      <option value='"Aptos", "Segoe UI Variable Text", "Segoe UI", "Helvetica Neue", Arial, sans-serif' {{if eq .AdminContentForm.FontSans "\"Aptos\", \"Segoe UI Variable Text\", \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif"}}selected{{end}}>Тонкий современный</option>
+                      <option value='"Helvetica Neue", Helvetica, Arial, sans-serif' {{if eq .AdminContentForm.FontSans "\"Helvetica Neue\", Helvetica, Arial, sans-serif"}}selected{{end}}>Нейтральный деловой</option>
+                      <option value='"Baskerville", "Times New Roman", Georgia, serif' {{if eq .AdminContentForm.FontSans "\"Baskerville\", \"Times New Roman\", Georgia, serif"}}selected{{end}}>Мягкий классический</option>
+                    </select>
+                  </label>
+
+                  <div class="admin-grid admin-grid-2">
+                    <label>
+                      <span>E-mail</span>
+                      <input name="contact_email" value="{{.AdminContentForm.ContactEmail}}" required>
+                    </label>
+                    <label>
+                      <span>Локация</span>
+                      <input name="contact_location" value="{{.AdminContentForm.ContactLocation}}">
+                    </label>
+                    <label>
+                      <span>Telegram URL</span>
+                      <input name="telegram_url" value="{{.AdminContentForm.TelegramURL}}">
+                    </label>
+                    <label>
+                      <span>MAX URL</span>
+                      <input name="max_url" value="{{.AdminContentForm.MaxURL}}">
+                    </label>
+                  </div>
+
+                  <label>
+                    <span>Ссылка на запись</span>
+                    <input name="calendar_url" value="{{.AdminContentForm.CalendarURL}}">
+                  </label>
+                </section>
+
+                <div class="admin-action-row">
+                  <button class="t-btn t-btnflex t-btnflex_type_button t-btnflex_md" type="submit">
+                    <span class="t-btnflex__text">Сохранить черновик</span>
+                  </button>
+                </div>
               </form>
             {{end}}
 
             {{if eq .AdminContentSection "home"}}
               <form class="admin-form admin-content-form" method="post" action="/administrator/content/save">
                 <input type="hidden" name="section" value="home">
-                <label><span>Hero image src</span><input name="home_hero_src" value="{{.AdminContentForm.HomeHeroImageSrc}}"></label>
-                <label><span>Hero image alt</span><input name="home_hero_alt" value="{{.AdminContentForm.HomeHeroImageAlt}}"></label>
-                <label><span>Headline</span><input name="home_headline" value="{{.AdminContentForm.HomeHeadline}}"></label>
-                <label><span>Subheadline</span><input name="home_subheadline" value="{{.AdminContentForm.HomeSubheadline}}"></label>
-                <label><span>Support text</span><textarea name="home_support_text" rows="3">{{.AdminContentForm.HomeSupportText}}</textarea></label>
-                <label><span>Фото в блоке «Обо мне» — src</span><input name="about_image_src" value="{{.AdminContentForm.AboutImageSrc}}"></label>
-                <label><span>Фото в блоке «Обо мне» — alt</span><input name="about_image_alt" value="{{.AdminContentForm.AboutImageAlt}}"></label>
-                <label><span>Текст блока «Обо мне», по абзацу в строке</span><textarea name="about_lead" rows="6">{{.AdminContentForm.AboutLead}}</textarea></label>
-                <label><span>Текст кнопки в блоке «Обо мне»</span><input name="about_button_text" value="{{.AdminContentForm.AboutButtonText}}"></label>
-                <label><span>Метрики: префикс | значение | подпись | иконка</span><textarea name="stats" rows="6">{{.AdminContentForm.Stats}}</textarea></label>
-                <label><span>Ценности: заголовок + текст, блоки через пустую строку</span><textarea name="values" rows="10">{{.AdminContentForm.Values}}</textarea></label>
-                <label><span>Образование: заголовок + пункты, блоки через пустую строку</span><textarea name="qualifications" rows="10">{{.AdminContentForm.Qualifications}}</textarea></label>
-                <label><span>Профстандарты, по строке</span><textarea name="standards" rows="5">{{.AdminContentForm.Standards}}</textarea></label>
-                <label><span>Философия отзывов — image src</span><input name="review_image_src" value="{{.AdminContentForm.ReviewImageSrc}}"></label>
-                <label><span>Философия отзывов — image alt</span><input name="review_image_alt" value="{{.AdminContentForm.ReviewImageAlt}}"></label>
-                <label><span>Философия отзывов — заголовок</span><input name="review_title" value="{{.AdminContentForm.ReviewTitle}}"></label>
-                <label><span>Философия отзывов — абзацы по строке</span><textarea name="review_paragraphs" rows="5">{{.AdminContentForm.ReviewParagraphs}}</textarea></label>
-                <label><span>Цены: название | цена | 0/1 динамический курс | описание</span><textarea name="pricing" rows="6">{{.AdminContentForm.Pricing}}</textarea></label>
-                <label><span>FAQ: заголовок + текст, блоки через пустую строку</span><textarea name="faq" rows="12">{{.AdminContentForm.FAQ}}</textarea></label>
-                <button class="t-btn t-btnflex t-btnflex_type_button t-btnflex_md" type="submit"><span class="t-btnflex__text">СОХРАНИТЬ ЧЕРНОВИК</span></button>
+
+                <section class="admin-form-card">
+                  <div class="admin-form-card__header">
+                    <h2 class="t-heading t-heading_md">Первый экран</h2>
+                    <p class="admin-form-card__text">Главный заголовок и краткое описание на стартовом экране сайта.</p>
+                  </div>
+
+                  <div class="admin-grid admin-grid-2">
+                    <label>
+                      <span>Главный заголовок</span>
+                      <input name="home_headline" value="{{.AdminContentForm.HomeHeadline}}">
+                    </label>
+                    <label>
+                      <span>Подзаголовок</span>
+                      <input name="home_subheadline" value="{{.AdminContentForm.HomeSubheadline}}">
+                    </label>
+                  </div>
+
+                  <label>
+                    <span>Поддерживающий текст</span>
+                    <textarea name="home_support_text" rows="3" placeholder="Короткий спокойный текст под заголовком">{{.AdminContentForm.HomeSupportText}}</textarea>
+                  </label>
+                </section>
+
+                <section class="admin-form-card">
+                  <div class="admin-form-card__header">
+                    <h2 class="t-heading t-heading_md">Блок «Обо мне»</h2>
+                    <p class="admin-form-card__text">Здесь редактируется только текст. Текущие фотографии в макете сохраняются автоматически и не требуют ручной загрузки через админку.</p>
+                  </div>
+
+                  <label>
+                    <span>Текст блока, по абзацу с новой строки</span>
+                    <textarea name="about_lead" rows="7" placeholder="Первый абзац&#10;Второй абзац&#10;Третий абзац">{{.AdminContentForm.AboutLead}}</textarea>
+                  </label>
+
+                  <label>
+                    <span>Текст кнопки</span>
+                    <input name="about_button_text" value="{{.AdminContentForm.AboutButtonText}}">
+                  </label>
+                </section>
+
+                <section class="admin-form-card">
+                  <div class="admin-form-card__header">
+                    <h2 class="t-heading t-heading_md">Метрики и смыслы</h2>
+                    <p class="admin-form-card__text">Иконки для метрик сохраняются автоматически. Вам нужно только менять текст и цифры.</p>
+                  </div>
+
+                  <label>
+                    <span>Метрики</span>
+                    <textarea name="stats" rows="12" placeholder="Провела более&#10;4500 часов&#10;индивидуальных консультаций&#10;&#10;Получила более&#10;500 часов&#10;личной и групповой терапии">{{.AdminContentForm.Stats}}</textarea>
+                  </label>
+                  <div class="admin-format">
+                    <strong>Формат метрики</strong>
+                    <p>1 строка — вступление, 2 строка — крупное значение, 3 строка — подпись. Между карточками оставляйте пустую строку.</p>
+                  </div>
+
+                  <label>
+                    <span>Ценности</span>
+                    <textarea name="values" rows="12" placeholder="Принятие&#10;Короткое описание ценности&#10;&#10;Поддержка&#10;Короткое описание следующей ценности">{{.AdminContentForm.Values}}</textarea>
+                  </label>
+                  <div class="admin-format">
+                    <strong>Формат ценностей</strong>
+                    <p>В каждом блоке первая строка — заголовок, ниже текст. Между блоками оставляйте пустую строку.</p>
+                  </div>
+
+                  <label>
+                    <span>Образование и квалификация</span>
+                    <textarea name="qualifications" rows="14" placeholder="Образование&#10;Первый пункт&#10;Второй пункт&#10;&#10;Дополнительное образование&#10;Первый пункт&#10;Второй пункт">{{.AdminContentForm.Qualifications}}</textarea>
+                  </label>
+
+                  <label>
+                    <span>Профессиональные стандарты, по одному пункту в строке</span>
+                    <textarea name="standards" rows="5" placeholder="Регулярная супервизия&#10;Личная терапия&#10;Работа в рамках этического кодекса">{{.AdminContentForm.Standards}}</textarea>
+                  </label>
+                </section>
+
+                <section class="admin-form-card">
+                  <div class="admin-form-card__header">
+                    <h2 class="t-heading t-heading_md">Блок о философии отзывов</h2>
+                    <p class="admin-form-card__text">Изображение в этом блоке также сохраняется автоматически. Меняется только заголовок и текст.</p>
+                  </div>
+
+                  <label>
+                    <span>Заголовок</span>
+                    <input name="review_title" value="{{.AdminContentForm.ReviewTitle}}">
+                  </label>
+
+                  <label>
+                    <span>Абзацы, по одному в строке</span>
+                    <textarea name="review_paragraphs" rows="6" placeholder="Первый абзац&#10;Второй абзац">{{.AdminContentForm.ReviewParagraphs}}</textarea>
+                  </label>
+                </section>
+
+                <div class="admin-action-row">
+                  <button class="t-btn t-btnflex t-btnflex_type_button t-btnflex_md" type="submit">
+                    <span class="t-btnflex__text">Сохранить черновик</span>
+                  </button>
+                </div>
+              </form>
+            {{end}}
+
+            {{if eq .AdminContentSection "pricing"}}
+              <form class="admin-form admin-content-form" method="post" action="/administrator/content/save">
+                <input type="hidden" name="section" value="pricing">
+
+                <section class="admin-form-card">
+                  <div class="admin-form-card__header">
+                    <h2 class="t-heading t-heading_md">Цены</h2>
+                    <p class="admin-form-card__text">Отдельный раздел для стоимости услуг. Здесь можно менять заголовки карточек, суммы и описания без поиска по другим вкладкам.</p>
+                  </div>
+
+                  <label>
+                    <span>Карточки цен</span>
+                    <textarea name="pricing" rows="14" placeholder="Консультация (Россия), 55 минут&#10;5 000 ₽&#10;Описание услуги&#10;&#10;Консультация (мир), 55 минут&#10;65 $&#10;Описание услуги">{{.AdminContentForm.Pricing}}</textarea>
+                  </label>
+                  <div class="admin-format">
+                    <strong>Формат карточки цены</strong>
+                    <p>1 строка — название, 2 строка — сумма, ниже описание. Между карточками оставляйте пустую строку. Технические пометки вроде динамического курса сохраняются автоматически.</p>
+                  </div>
+                </section>
+
+                <section class="admin-form-card">
+                  <div class="admin-form-card__header">
+                    <h2 class="t-heading t-heading_md">FAQ</h2>
+                    <p class="admin-form-card__text">Вопросы и ответы на главной странице.</p>
+                  </div>
+
+                  <label>
+                    <span>Список вопросов</span>
+                    <textarea name="faq" rows="18" placeholder="С чем я могу помочь?&#10;Ответ на вопрос&#10;&#10;Сколько длится терапия?&#10;Ответ на вопрос">{{.AdminContentForm.FAQ}}</textarea>
+                  </label>
+                  <div class="admin-format">
+                    <strong>Формат вопроса</strong>
+                    <p>Первая строка — вопрос, ниже ответ. Между карточками оставляйте пустую строку.</p>
+                  </div>
+                </section>
+
+                <div class="admin-action-row">
+                  <button class="t-btn t-btnflex t-btnflex_type_button t-btnflex_md" type="submit">
+                    <span class="t-btnflex__text">Сохранить черновик</span>
+                  </button>
+                </div>
               </form>
             {{end}}
 
             {{if eq .AdminContentSection "booking"}}
               <form class="admin-form admin-content-form" method="post" action="/administrator/content/save">
                 <input type="hidden" name="section" value="booking">
-                <label><span>Заголовок</span><input name="booking_title" value="{{.AdminContentForm.BookingTitle}}"></label>
-                <label><span>Фото — src</span><input name="booking_image_src" value="{{.AdminContentForm.BookingImageSrc}}"></label>
-                <label><span>Фото — alt</span><input name="booking_image_alt" value="{{.AdminContentForm.BookingImageAlt}}"></label>
-                <label><span>Описание, по абзацу в строке</span><textarea name="booking_description" rows="5">{{.AdminContentForm.BookingDescription}}</textarea></label>
-                <button class="t-btn t-btnflex t-btnflex_type_button t-btnflex_md" type="submit"><span class="t-btnflex__text">СОХРАНИТЬ ЧЕРНОВИК</span></button>
+
+                <section class="admin-form-card">
+                  <div class="admin-form-card__header">
+                    <h2 class="t-heading t-heading_md">Страница записи</h2>
+                    <p class="admin-form-card__text">Изображение в блоке записи остается текущим автоматически. Здесь редактируются только заголовок и описательный текст.</p>
+                  </div>
+
+                  <label>
+                    <span>Заголовок</span>
+                    <input name="booking_title" value="{{.AdminContentForm.BookingTitle}}">
+                  </label>
+
+                  <label>
+                    <span>Описание, по абзацу в строке</span>
+                    <textarea name="booking_description" rows="6" placeholder="Первый абзац&#10;Второй абзац">{{.AdminContentForm.BookingDescription}}</textarea>
+                  </label>
+                </section>
+
+                <div class="admin-action-row">
+                  <button class="t-btn t-btnflex t-btnflex_type_button t-btnflex_md" type="submit">
+                    <span class="t-btnflex__text">Сохранить черновик</span>
+                  </button>
+                </div>
               </form>
             {{end}}
 
             {{if eq .AdminContentSection "memo"}}
               <form class="admin-form admin-content-form" method="post" action="/administrator/content/save">
                 <input type="hidden" name="section" value="memo">
-                <label><span>Заголовок страницы</span><input name="memo_title" value="{{.AdminContentForm.MemoTitle}}"></label>
-                <label><span>Подзаголовок страницы</span><textarea name="memo_subtitle" rows="3">{{.AdminContentForm.MemoSubtitle}}</textarea></label>
-                <label><span>Блоки памятки: заголовок, src, alt, абзацы. Блоки через пустую строку</span><textarea name="memo_blocks" rows="18">{{.AdminContentForm.MemoBlocks}}</textarea></label>
-                <button class="t-btn t-btnflex t-btnflex_type_button t-btnflex_md" type="submit"><span class="t-btnflex__text">СОХРАНИТЬ ЧЕРНОВИК</span></button>
+
+                <section class="admin-form-card">
+                  <div class="admin-form-card__header">
+                    <h2 class="t-heading t-heading_md">Памятка</h2>
+                    <p class="admin-form-card__text">Фотографии в карточках памятки сохраняются автоматически. В редакторе меняются только заголовки и тексты блоков.</p>
+                  </div>
+
+                  <label>
+                    <span>Заголовок страницы</span>
+                    <input name="memo_title" value="{{.AdminContentForm.MemoTitle}}">
+                  </label>
+
+                  <label>
+                    <span>Подзаголовок страницы</span>
+                    <textarea name="memo_subtitle" rows="3" placeholder="Короткое пояснение для страницы памятки">{{.AdminContentForm.MemoSubtitle}}</textarea>
+                  </label>
+
+                  <label>
+                    <span>Блоки памятки</span>
+                    <textarea name="memo_blocks" rows="20" placeholder="Проверьте оборудование&#10;Первый абзац&#10;Второй абзац&#10;&#10;Подготовьте пространство&#10;Первый абзац&#10;Второй абзац">{{.AdminContentForm.MemoBlocks}}</textarea>
+                  </label>
+                  <div class="admin-format">
+                    <strong>Формат блока</strong>
+                    <p>Первая строка — заголовок блока, ниже абзацы. Между блоками оставляйте пустую строку.</p>
+                  </div>
+                </section>
+
+                <div class="admin-action-row">
+                  <button class="t-btn t-btnflex t-btnflex_type_button t-btnflex_md" type="submit">
+                    <span class="t-btnflex__text">Сохранить черновик</span>
+                  </button>
+                </div>
               </form>
             {{end}}
 
             {{if eq .AdminContentSection "rules"}}
               <form class="admin-form admin-content-form" method="post" action="/administrator/content/save">
                 <input type="hidden" name="section" value="rules">
-                <label><span>Заголовок</span><input name="rules_title" value="{{.AdminContentForm.RulesTitle}}"></label>
-                <label><span>Подзаголовок</span><textarea name="rules_subtitle" rows="3">{{.AdminContentForm.RulesSubtitle}}</textarea></label>
-                <label><span>Lead, по абзацу в строке</span><textarea name="rules_lead" rows="4">{{.AdminContentForm.RulesLead}}</textarea></label>
-                <label><span>Блоки правил: заголовок + абзацы, блоки через пустую строку</span><textarea name="rules_blocks" rows="20">{{.AdminContentForm.RulesBlocks}}</textarea></label>
-                <button class="t-btn t-btnflex t-btnflex_type_button t-btnflex_md" type="submit"><span class="t-btnflex__text">СОХРАНИТЬ ЧЕРНОВИК</span></button>
+
+                <section class="admin-form-card">
+                  <div class="admin-form-card__header">
+                    <h2 class="t-heading t-heading_md">Правила консультаций</h2>
+                    <p class="admin-form-card__text">Сделал этот раздел более понятным: короткое вступление отдельно, а основные правила задаются смысловыми блоками с заголовками и абзацами.</p>
+                  </div>
+
+                  <label>
+                    <span>Заголовок страницы</span>
+                    <input name="rules_title" value="{{.AdminContentForm.RulesTitle}}">
+                  </label>
+
+                  <label>
+                    <span>Подзаголовок</span>
+                    <textarea name="rules_subtitle" rows="3" placeholder="Короткое пояснение для страницы правил">{{.AdminContentForm.RulesSubtitle}}</textarea>
+                  </label>
+
+                  <label>
+                    <span>Вступительный текст, по абзацу в строке</span>
+                    <textarea name="rules_lead" rows="4" placeholder="Первый абзац&#10;Второй абзац">{{.AdminContentForm.RulesLead}}</textarea>
+                  </label>
+
+                  <label>
+                    <span>Основные пункты правил</span>
+                    <textarea name="rules_blocks" rows="20" placeholder="Оплата и подтверждение записи&#10;Первый абзац&#10;Второй абзац&#10;&#10;Отмена и перенос консультации&#10;Первый абзац&#10;Второй абзац">{{.AdminContentForm.RulesBlocks}}</textarea>
+                  </label>
+                  <div class="admin-format">
+                    <strong>Формат блока правил</strong>
+                    <p>Первая строка — заголовок раздела, ниже абзацы этого раздела. Между разделами оставляйте пустую строку.</p>
+                  </div>
+                </section>
+
+                <div class="admin-action-row">
+                  <button class="t-btn t-btnflex t-btnflex_type_button t-btnflex_md" type="submit">
+                    <span class="t-btnflex__text">Сохранить черновик</span>
+                  </button>
+                </div>
               </form>
             {{end}}
 
             {{if eq .AdminContentSection "privacy"}}
               <form class="admin-form admin-content-form" method="post" action="/administrator/content/save">
                 <input type="hidden" name="section" value="privacy">
-                <label><span>Заголовок</span><input name="privacy_title" value="{{.AdminContentForm.PrivacyTitle}}"></label>
-                <label><span>Подзаголовок</span><textarea name="privacy_subtitle" rows="3">{{.AdminContentForm.PrivacySubtitle}}</textarea></label>
-                <label><span>Lead, по абзацу в строке</span><textarea name="privacy_lead" rows="4">{{.AdminContentForm.PrivacyLead}}</textarea></label>
-                <label><span>Блоки политики: заголовок + абзацы, блоки через пустую строку</span><textarea name="privacy_blocks" rows="20">{{.AdminContentForm.PrivacyBlocks}}</textarea></label>
-                <button class="t-btn t-btnflex t-btnflex_type_button t-btnflex_md" type="submit"><span class="t-btnflex__text">СОХРАНИТЬ ЧЕРНОВИК</span></button>
+
+                <section class="admin-form-card">
+                  <div class="admin-form-card__header">
+                    <h2 class="t-heading t-heading_md">Политика обработки данных</h2>
+                    <p class="admin-form-card__text">Юридический текст также разбит на понятные части: заголовок страницы, вступление и далее основные разделы документа.</p>
+                  </div>
+
+                  <label>
+                    <span>Заголовок страницы</span>
+                    <input name="privacy_title" value="{{.AdminContentForm.PrivacyTitle}}">
+                  </label>
+
+                  <label>
+                    <span>Подзаголовок</span>
+                    <textarea name="privacy_subtitle" rows="3" placeholder="Короткое пояснение к документу">{{.AdminContentForm.PrivacySubtitle}}</textarea>
+                  </label>
+
+                  <label>
+                    <span>Вступительный текст, по абзацу в строке</span>
+                    <textarea name="privacy_lead" rows="4" placeholder="Первый абзац&#10;Второй абзац">{{.AdminContentForm.PrivacyLead}}</textarea>
+                  </label>
+
+                  <label>
+                    <span>Основные разделы политики</span>
+                    <textarea name="privacy_blocks" rows="22" placeholder="Общие положения&#10;Первый абзац&#10;Второй абзац&#10;&#10;Права субъекта персональных данных&#10;Первый абзац&#10;Второй абзац">{{.AdminContentForm.PrivacyBlocks}}</textarea>
+                  </label>
+                  <div class="admin-format">
+                    <strong>Формат раздела</strong>
+                    <p>Первая строка — заголовок раздела, ниже абзацы. Между разделами оставляйте пустую строку.</p>
+                  </div>
+                </section>
+
+                <div class="admin-action-row">
+                  <button class="t-btn t-btnflex t-btnflex_type_button t-btnflex_md" type="submit">
+                    <span class="t-btnflex__text">Сохранить черновик</span>
+                  </button>
+                </div>
               </form>
             {{end}}
           {{end}}
@@ -281,7 +616,7 @@
                 <input name="password" type="password" autocomplete="current-password" required>
               </label>
               <button class="t-btn t-btnflex t-btnflex_type_bbutton t-btnflex_md admin-submit" type="submit">
-                <span class="t-btnflex__text">ВОЙТИ</span>
+                <span class="t-btnflex__text">Войти</span>
               </button>
             </form>
           {{else}}
