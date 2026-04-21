@@ -11,6 +11,7 @@
           <p class="t-descr t-descr_md"><strong>{{.Site.Brand}}</strong></p>
           <p class="t-descr t-descr_md">{{.Site.Contact.Location}}</p>
           <p class="t-descr t-descr_md"><a href="tel:+79652605032">{{.Site.Contact.Phone}}</a></p>
+          {{range .Site.Booking.Description}}<p class="t-descr t-descr_md">{{.}}</p>{{end}}
         </div>
       </div>
     </div>
