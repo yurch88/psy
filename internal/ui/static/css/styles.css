@@ -1452,78 +1452,75 @@ svg {
   color: #966969;
 }
 
-.admin-date-picker,
+.admin-oneoff-builder,
 .admin-selected-slots {
   display: grid;
   gap: 18px;
   min-width: 0;
 }
 
-.admin-date-builder-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-  align-items: start;
-}
-
-.admin-date-builder-grid > *,
-.admin-date-picker > *,
-.admin-selected-slots > * {
-  min-width: 0;
-}
-
-.admin-date-panel {
+.admin-oneoff-section {
+  position: relative;
   display: grid;
   gap: 18px;
   min-width: 0;
-  padding: 20px 22px;
+  padding: 24px;
   border: 1px solid rgba(20, 32, 51, 0.08);
   border-radius: 28px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(247, 248, 251, 0.94) 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
-  overflow: hidden;
+  background: linear-gradient(180deg, rgba(249, 250, 252, 0.88) 0%, rgba(255, 255, 255, 0.94) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  overflow: visible;
 }
 
-.admin-date-field {
+.admin-oneoff-section__head {
   display: grid;
-  gap: 12px;
+  gap: 6px;
 }
 
-.admin-date-field-hint {
+.admin-oneoff-section__text,
+.admin-current-slot {
   margin: 0;
   color: #6a7588;
   font-size: 14px;
   line-height: 1.6;
 }
 
-.admin-date-control {
+.admin-date-control,
+.admin-time-picker {
   position: relative;
+  min-width: 0;
 }
 
-.admin-date-trigger {
-  display: flex;
+.admin-chooser-trigger {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
+  gap: 16px;
   width: 100%;
-  min-height: 60px;
-  padding: 0 18px;
+  min-height: 62px;
+  padding: 0 16px 0 18px;
   border: 1px solid rgba(20, 32, 51, 0.12);
   border-radius: 22px;
-  background: rgba(255, 255, 255, 0.96);
+  background: rgba(255, 255, 255, 0.98);
   color: #182133;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease, background-color 0.18s ease;
 }
 
-.admin-date-trigger:hover,
-.admin-date-trigger:focus-visible {
-  border-color: rgba(24, 33, 51, 0.2);
-  box-shadow: 0 0 0 4px rgba(24, 33, 51, 0.06);
+.admin-chooser-trigger:hover,
+.admin-chooser-trigger:focus-visible {
+  border-color: rgba(24, 33, 51, 0.18);
+  box-shadow: 0 0 0 4px rgba(24, 33, 51, 0.05);
   outline: none;
 }
 
-.admin-date-trigger__value {
+.admin-chooser-trigger.is-filled {
+  border-color: rgba(216, 173, 126, 0.4);
+  background: rgba(255, 251, 246, 0.98);
+}
+
+.admin-chooser-trigger__value {
   min-width: 0;
   color: #182133;
   font-size: 15px;
@@ -1531,59 +1528,73 @@ svg {
   line-height: 1.45;
 }
 
-.admin-date-trigger__icon {
+.admin-chooser-trigger__icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(216, 173, 126, 0.35);
   border-radius: 50%;
-  background: rgba(24, 33, 51, 0.06);
-  color: #182133;
-  font-size: 15px;
+  background: rgba(255, 246, 238, 0.92);
+  color: #7a5a43;
+  font-size: 16px;
+  line-height: 1;
   flex: 0 0 auto;
 }
 
-.admin-date-popover {
+.admin-date-popover,
+.admin-time-popover {
   position: absolute;
-  top: calc(100% + 12px);
+  top: calc(100% + 14px);
   left: 0;
-  right: 0;
-  z-index: 20;
+  z-index: 24;
   display: grid;
-  gap: 14px;
-  padding: 16px;
-  border: 1px solid rgba(20, 32, 51, 0.1);
-  border-radius: 24px;
+  gap: 16px;
+  min-width: min(100%, 400px);
+  padding: 18px;
+  border: 1px solid rgba(20, 32, 51, 0.08);
+  border-radius: 28px;
   background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 22px 48px rgba(20, 32, 51, 0.14);
+  box-shadow: 0 26px 56px rgba(20, 32, 51, 0.14);
+}
+
+.admin-date-popover {
+  width: min(100%, 392px);
+}
+
+.admin-time-popover {
+  width: min(100%, 520px);
 }
 
 .admin-date-popover__header {
   display: grid;
-  grid-template-columns: 40px 1fr 40px;
+  grid-template-columns: 44px 1fr 44px;
   align-items: center;
   gap: 10px;
 }
 
-.admin-date-popover__title {
-  text-align: center;
+.admin-date-popover__title,
+.admin-time-popover__title {
+  margin: 0;
   color: #182133;
   font-size: 15px;
   font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
 }
 
-.admin-calendar-nav {
+.admin-popover-nav {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
-  border: 1px solid rgba(20, 32, 51, 0.12);
-  border-radius: 999px;
-  background: rgba(248, 249, 252, 0.94);
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(20, 32, 51, 0.1);
+  border-radius: 16px;
+  background: #ffffff;
   color: #182133;
-  font-size: 20px;
+  font-size: 22px;
   line-height: 1;
   cursor: pointer;
 }
@@ -1603,122 +1614,193 @@ svg {
   color: #7a8394;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-}
-
-.admin-date-grid__blank,
-.admin-date-day {
-  min-height: 42px;
 }
 
 .admin-date-day {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-height: 44px;
   border: 1px solid transparent;
-  border-radius: 14px;
-  background: #f5f6fa;
+  border-radius: 16px;
+  background: #f6f7fa;
   color: #182133;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   cursor: pointer;
   transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
 }
 
 .admin-date-day:hover {
-  border-color: rgba(20, 32, 51, 0.12);
-  background: #ffffff;
   transform: translateY(-1px);
+  border-color: rgba(216, 173, 126, 0.35);
+  background: #ffffff;
+}
+
+.admin-date-day.is-outside {
+  color: #b1b8c5;
+  background: #fbfbfd;
 }
 
 .admin-date-day.is-today {
-  border-color: rgba(24, 33, 51, 0.18);
+  border-color: rgba(24, 33, 51, 0.16);
 }
 
 .admin-date-day.is-selected {
-  border-color: rgba(67, 132, 86, 0.22);
-  background: rgba(211, 236, 217, 0.92);
-  color: #244c30;
+  border-color: rgba(216, 173, 126, 0.42);
+  background: rgba(255, 241, 229, 0.96);
+  color: #7a4d2a;
 }
 
-.admin-date-picker__header,
-.admin-selected-slots__header,
-.admin-date-actions,
-.admin-slot-builder {
+.admin-popover-actions {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-soft-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px solid rgba(20, 32, 51, 0.12);
+  border-radius: 18px;
+  background: #ffffff;
+  color: #182133;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.admin-soft-button-strong {
+  border-color: rgba(216, 173, 126, 0.42);
+  background: rgba(255, 241, 229, 0.96);
+  color: #7a4d2a;
+}
+
+.admin-time-range {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
 }
 
-.admin-date-picker__text,
-.admin-current-slot {
-  margin: 0;
-  color: #6a7588;
-  font-size: 14px;
-  line-height: 1.6;
+.admin-time-trigger {
+  gap: 10px 16px;
 }
 
-.admin-selected-slots__header .admin-field-title {
-  flex: 0 0 auto;
-}
-
-.admin-select-field {
-  display: grid;
-  gap: 10px;
-}
-
-.admin-select-shell {
-  position: relative;
-}
-
-.admin-select-shell::after {
-  content: "▾";
-  position: absolute;
-  top: 50%;
-  right: 18px;
-  transform: translateY(-50%);
+.admin-time-trigger__meta {
+  grid-column: 1;
+  grid-row: 1;
+  display: block;
   color: #7a8394;
-  font-size: 14px;
-  pointer-events: none;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.admin-select-shell select {
-  width: 100%;
-  min-height: 60px;
-  padding: 0 48px 0 18px;
-  border: 1px solid rgba(20, 32, 51, 0.12);
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.96);
+.admin-time-trigger__value {
+  grid-column: 1;
+  grid-row: 2;
+  display: block;
+  margin-top: 2px;
   color: #182133;
   font-size: 15px;
   font-weight: 500;
   line-height: 1.45;
-  appearance: none;
 }
 
-.admin-select-shell select:focus {
-  border-color: rgba(24, 33, 51, 0.2);
-  box-shadow: 0 0 0 4px rgba(24, 33, 51, 0.06);
-  outline: none;
+.admin-time-trigger .admin-chooser-trigger__icon {
+  grid-column: 2;
+  grid-row: 1 / span 2;
 }
 
-.admin-select-shell select:disabled {
-  color: #8e97a8;
-  background: rgba(245, 246, 248, 0.96);
+.admin-time-popover__body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
-.admin-selected-slots__box {
-  min-width: 0;
-  padding: 14px 14px 16px;
+.admin-time-wheel {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-time-wheel__label {
+  color: #7a8394;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-time-wheel__list {
+  display: grid;
+  gap: 8px;
+  max-height: 224px;
+  padding: 12px;
   border: 1px solid rgba(20, 32, 51, 0.08);
-  border-radius: 24px;
-  background: rgba(248, 249, 252, 0.96);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76);
-  overflow: hidden;
+  border-radius: 22px;
+  background: #fbfbfd;
+  overflow-y: auto;
+}
+
+.admin-time-wheel__list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.admin-time-wheel__list::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(20, 32, 51, 0.14);
+}
+
+.admin-time-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #182133;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+}
+
+.admin-time-option.is-selected {
+  border-color: rgba(216, 173, 126, 0.42);
+  background: rgba(255, 241, 229, 0.96);
+  color: #7a4d2a;
 }
 
 .admin-date-actions {
+  display: grid;
+  gap: 14px;
   justify-items: start;
+}
+
+.admin-current-slot-accent {
+  width: 100%;
+  min-height: 54px;
+  padding: 14px 16px;
+  border: 1px solid rgba(216, 173, 126, 0.28);
+  border-radius: 20px;
+  background: rgba(255, 250, 244, 0.98);
+  color: #7a5a43;
+}
+
+.admin-selected-slots__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .admin-date-actions .admin-link-button,
@@ -1735,6 +1817,14 @@ svg {
 
 .admin-link-button-strong:hover {
   background: #141b2a;
+}
+
+.admin-selected-slots__box {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(20, 32, 51, 0.08);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.88);
 }
 
 .admin-selected-slots__list {
@@ -1755,8 +1845,8 @@ svg {
   width: 100%;
   padding: 14px 16px;
   border: 1px solid rgba(20, 32, 51, 0.1);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.98);
+  border-radius: 18px;
+  background: #f8f9fc;
 }
 
 .admin-selected-slot-chip span {
@@ -2184,8 +2274,9 @@ svg {
     font-size: 14px;
   }
 
-  .admin-date-builder-grid {
-    grid-template-columns: 1fr;
+  .admin-date-popover,
+  .admin-time-popover {
+    min-width: min(100%, 360px);
   }
 }
 
@@ -2311,7 +2402,8 @@ svg {
     grid-template-columns: 1fr;
   }
 
-  .admin-date-builder-grid {
+  .admin-time-range,
+  .admin-time-popover__body {
     grid-template-columns: 1fr;
   }
 
@@ -2414,16 +2506,19 @@ svg {
     width: 100%;
   }
 
-  .admin-date-panel,
+  .admin-oneoff-section,
   .admin-selected-slots__box {
     padding-left: 18px;
     padding-right: 18px;
   }
 
-  .admin-date-popover {
+  .admin-date-popover,
+  .admin-time-popover {
     position: static;
     margin-top: 12px;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76);
+    width: 100%;
+    min-width: 0;
   }
 
   .admin-date-actions .admin-link-button,
