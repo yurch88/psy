@@ -20,12 +20,15 @@ const (
 	BookingStatusPending   BookingStatus = "pending"
 	BookingStatusConfirmed BookingStatus = "confirmed"
 	BookingStatusRejected  BookingStatus = "rejected"
+	BookingStatusCancelled BookingStatus = "cancelled"
 )
 
 const (
-	ResolutionConfirmed = "confirmed"
-	ResolutionRejected  = "rejected"
-	ResolutionSlotTaken = "slot_taken"
+	ResolutionConfirmed   = "confirmed"
+	ResolutionRejected    = "rejected"
+	ResolutionSlotTaken   = "slot_taken"
+	ResolutionCancelled   = "cancelled"
+	ResolutionRescheduled = "rescheduled"
 )
 
 type ReviewAction string
@@ -36,10 +39,13 @@ const (
 )
 
 var ErrBookingNotFound = errors.New("booking not found")
+var ErrSlotNotFound = errors.New("slot not found")
+var ErrSlotAlreadyTaken = errors.New("slot already taken")
 
 type Service struct {
 	location *time.Location
 	store    *Store
+	rules    *RuleStore
 	now      func() time.Time
 	seq      atomic.Uint64
 }
@@ -102,53 +108,28 @@ func (e ValidationError) Error() string {
 	return strings.Join(e, "; ")
 }
 
-func NewService(timezone, bookingsPath string) (*Service, error) {
+func NewService(timezone, bookingsPath, rulesPath string) (*Service, error) {
 	location, err := time.LoadLocation(timezone)
 	if err != nil {
 		return nil, fmt.Errorf("load timezone %q: %w", timezone, err)
 	}
 
-	return &Service{
+	service := &Service{
 		location: location,
 		store:    NewStore(bookingsPath),
+		rules:    NewRuleStore(rulesPath),
 		now:      time.Now,
-	}, nil
+	}
+
+	if err := service.ensureDefaultRules(); err != nil {
+		return nil, err
+	}
+
+	return service, nil
 }
 
 func (s *Service) Slots() []Slot {
-	now := s.now().In(s.location)
-	startDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, s.location)
-	bookedSlots := s.store.ConfirmedSlotIDs()
-	slots := make([]Slot, 0, 54)
-
-	for dayOffset := 0; dayOffset < 21; dayOffset++ {
-		day := startDay.AddDate(0, 0, dayOffset)
-		if day.Weekday() == time.Sunday {
-			continue
-		}
-
-		hours := []int{9, 11, 14, 16, 18}
-		if day.Weekday() == time.Saturday {
-			hours = []int{10, 12, 15}
-		}
-
-		for _, hour := range hours {
-			start := time.Date(day.Year(), day.Month(), day.Day(), hour, 0, 0, 0, s.location)
-			if !start.After(now.Add(2 * time.Hour)) {
-				continue
-			}
-
-			id := start.Format("20060102T1504")
-			slots = append(slots, Slot{
-				ID:       id,
-				Start:    start,
-				End:      start.Add(55 * time.Minute),
-				Disabled: bookedSlots[id],
-			})
-		}
-	}
-
-	return slots
+	return s.generatedSlots(s.store.ReservedSlotIDs())
 }
 
 func (s *Service) AvailableSlots() []Slot {
@@ -223,7 +204,16 @@ func (s *Service) Review(ctx context.Context, bookingID string, action ReviewAct
 }
 
 func (s *Service) findSlot(id string) (Slot, bool) {
-	for _, slot := range s.AvailableSlots() {
+	for _, slot := range s.generatedSlots(s.store.ReservedSlotIDs()) {
+		if slot.ID == id {
+			return slot, true
+		}
+	}
+	return Slot{}, false
+}
+
+func (s *Service) findSlotExcluding(id, excludeBookingID string) (Slot, bool) {
+	for _, slot := range s.generatedSlots(s.store.ReservedSlotIDsExcept(excludeBookingID)) {
 		if slot.ID == id {
 			return slot, true
 		}
@@ -285,7 +275,11 @@ func (s *Store) Append(ctx context.Context, booking Booking) error {
 	return err
 }
 
-func (s *Store) ConfirmedSlotIDs() map[string]bool {
+func (s *Store) ReservedSlotIDs() map[string]bool {
+	return s.ReservedSlotIDsExcept("")
+}
+
+func (s *Store) ReservedSlotIDsExcept(excludeBookingID string) map[string]bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -296,7 +290,11 @@ func (s *Store) ConfirmedSlotIDs() map[string]bool {
 	}
 
 	for _, booking := range bookings {
-		if booking.SlotID != "" && booking.EffectiveStatus() == BookingStatusConfirmed {
+		if booking.ID == excludeBookingID || booking.SlotID == "" {
+			continue
+		}
+		switch booking.EffectiveStatus() {
+		case BookingStatusPending, BookingStatusConfirmed:
 			booked[booking.SlotID] = true
 		}
 	}
@@ -370,6 +368,8 @@ func (s *Store) Review(ctx context.Context, bookingID string, action ReviewActio
 			return ReviewResult{Booking: *target, CallbackText: "Заявка уже подтверждена"}, nil
 		case BookingStatusRejected:
 			return ReviewResult{Booking: *target, CallbackText: "Заявка уже отклонена"}, nil
+		case BookingStatusCancelled:
+			return ReviewResult{Booking: *target, CallbackText: "Заявка уже отменена"}, nil
 		}
 
 		if hasAnotherConfirmed(bookings, target.ID, target.SlotID) {
@@ -423,6 +423,8 @@ func (s *Store) Review(ctx context.Context, bookingID string, action ReviewActio
 			return ReviewResult{Booking: *target, CallbackText: "Заявка уже подтверждена"}, nil
 		case BookingStatusRejected:
 			return ReviewResult{Booking: *target, CallbackText: "Заявка уже отклонена"}, nil
+		case BookingStatusCancelled:
+			return ReviewResult{Booking: *target, CallbackText: "Заявка уже отменена"}, nil
 		}
 
 		target.Status = BookingStatusRejected
@@ -442,6 +444,92 @@ func (s *Store) Review(ctx context.Context, bookingID string, action ReviewActio
 	default:
 		return ReviewResult{}, fmt.Errorf("unknown review action %q", action)
 	}
+}
+
+func (s *Store) Cancel(ctx context.Context, bookingID string, now time.Time) (Booking, error) {
+	select {
+	case <-ctx.Done():
+		return Booking{}, ctx.Err()
+	default:
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	bookings, err := s.loadLocked()
+	if err != nil {
+		return Booking{}, err
+	}
+
+	for i := range bookings {
+		if bookings[i].ID != bookingID {
+			continue
+		}
+		if status := bookings[i].EffectiveStatus(); status == BookingStatusRejected || status == BookingStatusCancelled {
+			return bookings[i], nil
+		}
+
+		bookings[i].Status = BookingStatusCancelled
+		bookings[i].ReviewedAt = timePtr(now)
+		bookings[i].Resolution = ResolutionCancelled
+		if err := s.saveLocked(ctx, bookings); err != nil {
+			return Booking{}, err
+		}
+		return bookings[i], nil
+	}
+
+	return Booking{}, ErrBookingNotFound
+}
+
+func (s *Store) Reschedule(ctx context.Context, bookingID string, slot Slot, now time.Time) (Booking, error) {
+	select {
+	case <-ctx.Done():
+		return Booking{}, ctx.Err()
+	default:
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	bookings, err := s.loadLocked()
+	if err != nil {
+		return Booking{}, err
+	}
+
+	index := -1
+	for i := range bookings {
+		if bookings[i].ID == bookingID {
+			index = i
+			break
+		}
+	}
+	if index == -1 {
+		return Booking{}, ErrBookingNotFound
+	}
+
+	for i := range bookings {
+		if bookings[i].ID == bookingID || bookings[i].SlotID != slot.ID {
+			continue
+		}
+		switch bookings[i].EffectiveStatus() {
+		case BookingStatusPending, BookingStatusConfirmed:
+			return Booking{}, ErrSlotAlreadyTaken
+		}
+	}
+
+	bookings[index].SlotID = slot.ID
+	bookings[index].Start = slot.Start
+	bookings[index].End = slot.End
+	bookings[index].ReviewedAt = timePtr(now)
+	bookings[index].Resolution = ResolutionRescheduled
+	if bookings[index].Status == BookingStatusRejected || bookings[index].Status == BookingStatusCancelled {
+		bookings[index].Status = BookingStatusPending
+	}
+
+	if err := s.saveLocked(ctx, bookings); err != nil {
+		return Booking{}, err
+	}
+	return bookings[index], nil
 }
 
 func (s *Store) loadLocked() ([]Booking, error) {

@@ -12,6 +12,7 @@ type Contact struct {
 type Site struct {
 	Brand       string
 	Description string
+	FontSans    string
 	Nav         []NavItem
 	Contact     Contact
 	Home        HomePage

@@ -4,6 +4,7 @@ func DefaultSite(contact Contact) Site {
 	return Site{
 		Brand:       "Психолог Наталья Кудинова",
 		Description: "Индивидуальные онлайн-консультации психолога Натальи Кудиновой.",
+		FontSans:    "\"Helvetica Neue\", Helvetica, Arial, sans-serif",
 		Contact:     contact,
 		Nav: []NavItem{
 			{Label: "Обо мне", Href: "/#about"},

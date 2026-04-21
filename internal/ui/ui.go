@@ -21,6 +21,14 @@ func NewRenderer() (*Renderer, error) {
 		parsed, err := template.New(page).Funcs(template.FuncMap{
 			"year": func() int { return time.Now().Year() },
 			"mod":  func(a, b int) int { return a % b },
+			"containsInt": func(values []int, target int) bool {
+				for _, value := range values {
+					if value == target {
+						return true
+					}
+				}
+				return false
+			},
 		}).ParseFS(files,
 			"templates/base.html",
 			"templates/components.html",

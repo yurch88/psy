@@ -1,0 +1,285 @@
+package handlers
+
+import (
+	"errors"
+	"net/http"
+	"strings"
+
+	"psy/internal/calendar"
+	"psy/internal/content"
+)
+
+func (h *Handler) administrator(w http.ResponseWriter, r *http.Request) {
+	if !requireMethod(w, r, http.MethodGet) {
+		return
+	}
+	h.renderAdministratorPage(w, r, PageData{}, http.StatusOK)
+}
+
+func (h *Handler) renderAdministratorPage(w http.ResponseWriter, r *http.Request, overrides PageData, status int) {
+	site := h.currentSite()
+	data := PageData{
+		Title:               "Администратор - " + site.Brand,
+		Description:         "Вход в административный раздел сайта.",
+		Site:                site,
+		AdminEnabled:        h.adminConfigured(),
+		AdminTab:            adminTab(r.URL.Query().Get("tab")),
+		AdminContentSection: adminContentSection(r.URL.Query().Get("section")),
+		HideSiteChrome:      true,
+	}
+
+	if data.AdminTab == "" {
+		data.AdminTab = "calendar"
+	}
+	if data.AdminContentSection == "" {
+		data.AdminContentSection = "main"
+	}
+	if overrides.AdminTab != "" {
+		data.AdminTab = overrides.AdminTab
+	}
+	if overrides.AdminContentSection != "" {
+		data.AdminContentSection = overrides.AdminContentSection
+	}
+
+	if overrides.AdminLogin != "" {
+		data.AdminLogin = overrides.AdminLogin
+	}
+	if overrides.AdminError != "" {
+		data.AdminError = overrides.AdminError
+	}
+	if overrides.AdminNotice != "" {
+		data.AdminNotice = overrides.AdminNotice
+		data.AdminNoticeClass = overrides.AdminNoticeClass
+	}
+	if overrides.AdminSlotMode != "" {
+		data.AdminSlotMode = overrides.AdminSlotMode
+	}
+	if overrides.AdminSlotDate != "" {
+		data.AdminSlotDate = overrides.AdminSlotDate
+	}
+	if overrides.AdminSlotTimes != "" {
+		data.AdminSlotTimes = overrides.AdminSlotTimes
+	}
+	if len(overrides.AdminSlotWeekdays) > 0 {
+		data.AdminSlotWeekdays = overrides.AdminSlotWeekdays
+	}
+
+	if data.AdminNotice == "" {
+		data.AdminNotice, data.AdminNoticeClass = adminNotice(r.URL.Query().Get("notice"))
+	}
+
+	if data.AdminSlotMode == "" {
+		data.AdminSlotMode = "weekly"
+	}
+
+	if !data.AdminEnabled {
+		if status != http.StatusOK {
+			w.WriteHeader(status)
+		}
+		h.render(w, "administrator", data)
+		return
+	}
+
+	if !h.isAdminAuthenticated(r) {
+		if status != http.StatusOK {
+			w.WriteHeader(status)
+		}
+		h.render(w, "administrator", data)
+		return
+	}
+
+	data.AdminAuthenticated = true
+	data.AdminSlotRules = h.adminSlotRuleViews()
+	data.AdminBookings = h.adminBookingViews()
+	data.AdminAvailableSlots = h.adminAvailableSlotOptions()
+	data.AdminContentForm = h.adminContentForm()
+	if overrides.AdminContentForm != (AdminContentForm{}) {
+		data.AdminContentForm = overrides.AdminContentForm
+	}
+
+	if status != http.StatusOK {
+		w.WriteHeader(status)
+	}
+	h.render(w, "administrator", data)
+}
+
+func (h *Handler) administratorRequireAuth(w http.ResponseWriter, r *http.Request) bool {
+	if !h.adminConfigured() {
+		h.renderAdministratorPage(w, r, PageData{AdminError: "Админ-панель пока не настроена. Добавьте логин и пароль в .env."}, http.StatusServiceUnavailable)
+		return false
+	}
+	if !h.isAdminAuthenticated(r) {
+		http.Redirect(w, r, "/administrator", http.StatusSeeOther)
+		return false
+	}
+	return true
+}
+
+func adminTab(value string) string {
+	switch strings.TrimSpace(value) {
+	case "calendar", "bookings", "content":
+		return value
+	default:
+		return "calendar"
+	}
+}
+
+func adminContentSection(value string) string {
+	switch strings.TrimSpace(value) {
+	case "main", "home", "booking", "memo", "rules", "privacy":
+		return value
+	default:
+		return "main"
+	}
+}
+
+func adminNotice(code string) (string, string) {
+	switch code {
+	case "slot-created":
+		return "Слоты сохранены.", "is-success"
+	case "slot-deleted":
+		return "Правило слотов удалено.", "is-success"
+	case "booking-cancelled":
+		return "Бронь отменена, слот снова доступен.", "is-success"
+	case "booking-rescheduled":
+		return "Бронь перенесена и клиенту отправлено уведомление.", "is-success"
+	case "draft-saved":
+		return "Черновик сохранён.", "is-success"
+	case "content-published":
+		return "Изменения опубликованы.", "is-success"
+	default:
+		return "", ""
+	}
+}
+
+func (h *Handler) adminSlotRuleViews() []AdminSlotRuleView {
+	rules, err := h.calendar.Rules()
+	if err != nil {
+		h.logger.Error("list slot rules", "error", err)
+		return nil
+	}
+
+	views := make([]AdminSlotRuleView, 0, len(rules))
+	for _, rule := range rules {
+		view := AdminSlotRuleView{
+			ID:         rule.ID,
+			TimesLabel: strings.Join(rule.StartTimes, ", "),
+		}
+		switch rule.Scope {
+		case calendar.SlotRuleScopeDate:
+			view.ScopeLabel = "Только на дату"
+			view.PatternLabel = rule.Date
+		default:
+			view.ScopeLabel = "Каждую неделю"
+			view.PatternLabel = adminWeekdaysLabel(rule.Weekdays)
+		}
+		views = append(views, view)
+	}
+	return views
+}
+
+func adminWeekdaysLabel(days []int) string {
+	labels := make([]string, 0, len(days))
+	for _, day := range days {
+		switch day {
+		case 1:
+			labels = append(labels, "понедельники")
+		case 2:
+			labels = append(labels, "вторники")
+		case 3:
+			labels = append(labels, "среды")
+		case 4:
+			labels = append(labels, "четверги")
+		case 5:
+			labels = append(labels, "пятницы")
+		case 6:
+			labels = append(labels, "субботы")
+		case 7:
+			labels = append(labels, "воскресенья")
+		}
+	}
+	return strings.Join(labels, ", ")
+}
+
+func (h *Handler) adminBookingViews() []AdminBookingView {
+	bookings, err := h.calendar.Bookings()
+	if err != nil {
+		h.logger.Error("list admin bookings", "error", err)
+		return nil
+	}
+
+	views := make([]AdminBookingView, 0, len(bookings))
+	for _, booking := range bookings {
+		views = append(views, AdminBookingView{
+			ID:             booking.ID,
+			Name:           booking.Name,
+			Email:          booking.Email,
+			Phone:          booking.Phone,
+			ClientTimezone: booking.ClientTimezone,
+			Comment:        booking.Comment,
+			CurrentSlotID:  booking.SlotID,
+			SlotLabel:      booking.Start.Format("02.01.2006 15:04") + " - " + booking.End.Format("15:04"),
+			CreatedAtLabel: booking.CreatedAt.In(booking.Start.Location()).Format("02.01.2006 15:04"),
+			StatusLabel:    adminStatusLabel(booking),
+			StatusClass:    adminStatusClass(booking),
+		})
+	}
+	return views
+}
+
+func (h *Handler) adminAvailableSlotOptions() []AdminSlotOption {
+	slots := h.calendar.AvailableSlots()
+	options := make([]AdminSlotOption, 0, len(slots))
+	for _, slot := range slots {
+		options = append(options, AdminSlotOption{
+			ID:    slot.ID,
+			Label: slot.Start.Format("02.01.2006 15:04") + " - " + slot.End.Format("15:04"),
+		})
+	}
+	return options
+}
+
+func adminStatusLabel(booking calendar.Booking) string {
+	switch booking.EffectiveStatus() {
+	case calendar.BookingStatusConfirmed:
+		return "Подтверждена"
+	case calendar.BookingStatusRejected:
+		if booking.Resolution == calendar.ResolutionSlotTaken {
+			return "Отклонена: слот занят"
+		}
+		return "Отклонена"
+	case calendar.BookingStatusCancelled:
+		return "Отменена"
+	default:
+		return "Ожидает подтверждения"
+	}
+}
+
+func adminStatusClass(booking calendar.Booking) string {
+	switch booking.EffectiveStatus() {
+	case calendar.BookingStatusConfirmed:
+		return "is-confirmed"
+	case calendar.BookingStatusRejected, calendar.BookingStatusCancelled:
+		return "is-rejected"
+	default:
+		return "is-pending"
+	}
+}
+
+func (h *Handler) draftSite() content.Site {
+	if h.contentManager != nil {
+		return h.contentManager.Draft()
+	}
+	return h.currentSite()
+}
+
+func adminFormError(err error, fallback string) string {
+	if err == nil {
+		return fallback
+	}
+	var validation calendar.ValidationError
+	if errors.As(err, &validation) && len(validation) > 0 {
+		return strings.Join(validation, ". ")
+	}
+	return fallback
+}

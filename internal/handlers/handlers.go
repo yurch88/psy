@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"psy/internal/calendar"
@@ -17,13 +18,20 @@ type BookingNotifier interface {
 	NotifyBooking(context.Context, calendar.Booking) error
 }
 
+type BookingEmailSender interface {
+	SendBookingCancellation(context.Context, calendar.Booking) error
+	SendBookingRescheduled(context.Context, calendar.Booking) error
+}
+
 type Handler struct {
-	site     content.Site
-	renderer *ui.Renderer
-	calendar *calendar.Service
-	rates    *rates.Service
-	notifier BookingNotifier
-	logger   *slog.Logger
+	site           content.Site
+	contentManager *content.Manager
+	renderer       *ui.Renderer
+	calendar       *calendar.Service
+	rates          *rates.Service
+	notifier       BookingNotifier
+	emailer        BookingEmailSender
+	logger         *slog.Logger
 
 	adminLogin string
 	adminPass  string
@@ -39,12 +47,23 @@ type PageData struct {
 	Errors      []string
 	Booking     *calendar.Booking
 
-	AdminEnabled       bool
-	AdminAuthenticated bool
-	AdminLogin         string
-	AdminError         string
-	AdminBookings      []AdminBookingView
-	HideSiteChrome     bool
+	AdminEnabled        bool
+	AdminAuthenticated  bool
+	AdminTab            string
+	AdminContentSection string
+	AdminLogin          string
+	AdminError          string
+	AdminNotice         string
+	AdminNoticeClass    string
+	AdminBookings       []AdminBookingView
+	AdminSlotRules      []AdminSlotRuleView
+	AdminAvailableSlots []AdminSlotOption
+	AdminSlotMode       string
+	AdminSlotDate       string
+	AdminSlotTimes      string
+	AdminSlotWeekdays   []int
+	AdminContentForm    AdminContentForm
+	HideSiteChrome      bool
 }
 
 type AdminBookingView struct {
@@ -54,10 +73,74 @@ type AdminBookingView struct {
 	Phone          string
 	ClientTimezone string
 	Comment        string
+	CurrentSlotID  string
 	SlotLabel      string
 	CreatedAtLabel string
 	StatusLabel    string
 	StatusClass    string
+}
+
+type AdminSlotRuleView struct {
+	ID           string
+	ScopeLabel   string
+	PatternLabel string
+	TimesLabel   string
+}
+
+type AdminSlotOption struct {
+	ID    string
+	Label string
+}
+
+type AdminContentForm struct {
+	Brand           string
+	Description     string
+	FontSans        string
+	ContactEmail    string
+	ContactPhone    string
+	ContactLocation string
+	TelegramURL     string
+	MaxURL          string
+	CalendarURL     string
+
+	HomeHeroImageSrc string
+	HomeHeroImageAlt string
+	HomeHeadline     string
+	HomeSubheadline  string
+	HomeSupportText  string
+	AboutImageSrc    string
+	AboutImageAlt    string
+	AboutLead        string
+	AboutButtonText  string
+	Stats            string
+	Values           string
+	Qualifications   string
+	Standards        string
+	ReviewImageSrc   string
+	ReviewImageAlt   string
+	ReviewTitle      string
+	ReviewParagraphs string
+	Pricing          string
+	FAQ              string
+
+	BookingTitle       string
+	BookingImageSrc    string
+	BookingImageAlt    string
+	BookingDescription string
+
+	MemoTitle    string
+	MemoSubtitle string
+	MemoBlocks   string
+
+	RulesTitle    string
+	RulesSubtitle string
+	RulesLead     string
+	RulesBlocks   string
+
+	PrivacyTitle    string
+	PrivacySubtitle string
+	PrivacyLead     string
+	PrivacyBlocks   string
 }
 
 type SlotDayView struct {
@@ -83,16 +166,18 @@ type BookingForm struct {
 	Comment        string
 }
 
-func New(site content.Site, renderer *ui.Renderer, calendarService *calendar.Service, rateService *rates.Service, notifier BookingNotifier, logger *slog.Logger, adminLogin, adminPass string) *Handler {
+func New(site content.Site, contentManager *content.Manager, renderer *ui.Renderer, calendarService *calendar.Service, rateService *rates.Service, notifier BookingNotifier, emailer BookingEmailSender, logger *slog.Logger, adminLogin, adminPass string) *Handler {
 	return &Handler{
-		site:       site,
-		renderer:   renderer,
-		calendar:   calendarService,
-		rates:      rateService,
-		notifier:   notifier,
-		logger:     logger,
-		adminLogin: adminLogin,
-		adminPass:  adminPass,
+		site:           site,
+		contentManager: contentManager,
+		renderer:       renderer,
+		calendar:       calendarService,
+		rates:          rateService,
+		notifier:       notifier,
+		emailer:        emailer,
+		logger:         logger,
+		adminLogin:     adminLogin,
+		adminPass:      adminPass,
 	}
 }
 
@@ -106,6 +191,12 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/administrator", h.administrator)
 	mux.HandleFunc("/administrator/login", h.administratorLogin)
 	mux.HandleFunc("/administrator/logout", h.administratorLogout)
+	mux.HandleFunc("/administrator/slots/create", h.administratorSlotsCreate)
+	mux.HandleFunc("/administrator/slots/delete", h.administratorSlotsDelete)
+	mux.HandleFunc("/administrator/bookings/cancel", h.administratorBookingCancel)
+	mux.HandleFunc("/administrator/bookings/reschedule", h.administratorBookingReschedule)
+	mux.HandleFunc("/administrator/content/save", h.administratorContentSave)
+	mux.HandleFunc("/administrator/content/publish", h.administratorContentPublish)
 	mux.HandleFunc("/healthz", h.healthz)
 }
 
@@ -119,10 +210,11 @@ func (h *Handler) home(w http.ResponseWriter, r *http.Request) {
 	}
 
 	worldPrice, _ := h.rates.ConsultationUSD(r.Context())
+	site := h.currentSite()
 	h.render(w, "home", PageData{
-		Title:       h.site.Brand,
-		Description: h.site.Description,
-		Site:        h.site,
+		Title:       site.Brand,
+		Description: site.Description,
+		Site:        site,
 		WorldPrice:  worldPrice,
 	})
 }
@@ -131,10 +223,11 @@ func (h *Handler) rules(w http.ResponseWriter, r *http.Request) {
 	if !requireMethod(w, r, http.MethodGet) {
 		return
 	}
+	site := h.currentSite()
 	h.render(w, "rules", PageData{
-		Title:       h.site.Rules.Title + " - " + h.site.Brand,
-		Description: h.site.Rules.Subtitle,
-		Site:        h.site,
+		Title:       site.Rules.Title + " - " + site.Brand,
+		Description: site.Rules.Subtitle,
+		Site:        site,
 	})
 }
 
@@ -142,10 +235,11 @@ func (h *Handler) memo(w http.ResponseWriter, r *http.Request) {
 	if !requireMethod(w, r, http.MethodGet) {
 		return
 	}
+	site := h.currentSite()
 	h.render(w, "memo", PageData{
-		Title:       h.site.Memo.Title + " - " + h.site.Brand,
-		Description: h.site.Memo.Subtitle,
-		Site:        h.site,
+		Title:       site.Memo.Title + " - " + site.Brand,
+		Description: site.Memo.Subtitle,
+		Site:        site,
 	})
 }
 
@@ -153,10 +247,11 @@ func (h *Handler) privacy(w http.ResponseWriter, r *http.Request) {
 	if !requireMethod(w, r, http.MethodGet) {
 		return
 	}
+	site := h.currentSite()
 	h.render(w, "privacy", PageData{
-		Title:       h.site.Privacy.Title + " - " + h.site.Brand,
-		Description: h.site.Privacy.Subtitle,
-		Site:        h.site,
+		Title:       site.Privacy.Title + " - " + site.Brand,
+		Description: site.Privacy.Subtitle,
+		Site:        site,
 	})
 }
 
@@ -164,10 +259,11 @@ func (h *Handler) booking(w http.ResponseWriter, r *http.Request) {
 	if !requireMethod(w, r, http.MethodGet) {
 		return
 	}
+	site := h.currentSite()
 	h.renderBooking(w, PageData{
-		Title:       h.site.Booking.Title + " - " + h.site.Brand,
-		Description: h.site.Booking.Description[0],
-		Site:        h.site,
+		Title:       site.Booking.Title + " - " + site.Brand,
+		Description: firstOr(site.Booking.Description, site.Description),
+		Site:        site,
 	})
 }
 
@@ -201,10 +297,11 @@ func (h *Handler) submitBooking(w http.ResponseWriter, r *http.Request) {
 		var validation calendar.ValidationError
 		if errors.As(err, &validation) {
 			w.WriteHeader(http.StatusBadRequest)
+			site := h.currentSite()
 			h.renderBooking(w, PageData{
-				Title:       h.site.Booking.Title + " - " + h.site.Brand,
-				Description: h.site.Booking.Description[0],
-				Site:        h.site,
+				Title:       site.Booking.Title + " - " + site.Brand,
+				Description: firstOr(site.Booking.Description, site.Description),
+				Site:        site,
 				Form:        form,
 				Errors:      []string(validation),
 			})
@@ -221,10 +318,11 @@ func (h *Handler) submitBooking(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	site := h.currentSite()
 	h.render(w, "thanks", PageData{
-		Title:       "Заявка принята - " + h.site.Brand,
+		Title:       "Заявка принята - " + site.Brand,
 		Description: "Заявка на консультацию сохранена и отправлена на подтверждение.",
-		Site:        h.site,
+		Site:        site,
 		Booking:     &booking,
 	})
 }
@@ -243,11 +341,27 @@ func (h *Handler) renderBooking(w http.ResponseWriter, data PageData) {
 
 func (h *Handler) render(w http.ResponseWriter, page string, data PageData) {
 	if data.Site.Brand == "" {
-		data.Site = h.site
+		data.Site = h.currentSite()
 	}
 	if err := h.renderer.Render(w, page, data); err != nil {
 		h.logger.Error("render page", "page", page, "error", err)
 	}
+}
+
+func (h *Handler) currentSite() content.Site {
+	if h.contentManager != nil {
+		return h.contentManager.Published()
+	}
+	return h.site
+}
+
+func firstOr(values []string, fallback string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return fallback
 }
 
 func (h *Handler) slotDays(slots []calendar.Slot) []SlotDayView {

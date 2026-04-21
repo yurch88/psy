@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"path/filepath"
 
 	"psy/internal/calendar"
 	"psy/internal/config"
@@ -26,12 +27,12 @@ func New(cfg config.Config, logger *slog.Logger) (*App, error) {
 		return nil, err
 	}
 
-	calendarService, err := calendar.NewService(cfg.BaseTimezone, cfg.BookingsPath)
+	calendarService, err := calendar.NewService(cfg.BaseTimezone, cfg.BookingsPath, filepath.Join(cfg.DataDir, "slot-rules.json"))
 	if err != nil {
 		return nil, err
 	}
 
-	site := content.DefaultSite(content.Contact{
+	defaultSite := content.DefaultSite(content.Contact{
 		Email:       cfg.Email,
 		Phone:       cfg.Phone,
 		Location:    cfg.Location,
@@ -39,6 +40,12 @@ func New(cfg config.Config, logger *slog.Logger) (*App, error) {
 		MaxURL:      cfg.MaxURL,
 		CalendarURL: cfg.CalendarURL,
 	})
+
+	contentManager, err := content.NewManager(cfg.DataDir, defaultSite)
+	if err != nil {
+		return nil, err
+	}
+	site := contentManager.Published()
 
 	var backgrounds []func(context.Context)
 	emailService := mailer.NewResend(cfg.ResendAPIKey, cfg.EmailFrom, cfg.EmailReplyTo, cfg.BaseTimezone, logger)
@@ -48,7 +55,7 @@ func New(cfg config.Config, logger *slog.Logger) (*App, error) {
 	}
 
 	rateService := rates.NewService(cfg.USDRateURL, cfg.USDRateTimeout)
-	pageHandler := handlers.New(site, renderer, calendarService, rateService, telegramService, logger, cfg.AdminLogin, cfg.AdminPass)
+	pageHandler := handlers.New(site, contentManager, renderer, calendarService, rateService, telegramService, emailService, logger, cfg.AdminLogin, cfg.AdminPass)
 
 	mux := http.NewServeMux()
 	pageHandler.Register(mux)

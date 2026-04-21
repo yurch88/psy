@@ -145,6 +145,28 @@ func (s *Service) SendBookingConfirmation(ctx context.Context, booking calendar.
 	return nil
 }
 
+func (s *Service) SendBookingCancellation(ctx context.Context, booking calendar.Booking) error {
+	if !s.Enabled() {
+		return nil
+	}
+
+	clientSlot, moscowSlot := s.presentations(booking)
+	subject := fmt.Sprintf("Ваша запись отменена — %s %s", clientSlot.Date, clientSlot.Time)
+	htmlBody, textBody := s.renderCancellation(booking, clientSlot, moscowSlot)
+	return s.sendBookingEmail(ctx, booking, subject, "booking_cancellation", htmlBody, textBody)
+}
+
+func (s *Service) SendBookingRescheduled(ctx context.Context, booking calendar.Booking) error {
+	if !s.Enabled() {
+		return nil
+	}
+
+	clientSlot, moscowSlot := s.presentations(booking)
+	subject := fmt.Sprintf("Ваша запись перенесена — %s %s", clientSlot.Date, clientSlot.Time)
+	htmlBody, textBody := s.renderRescheduled(booking, clientSlot, moscowSlot)
+	return s.sendBookingEmail(ctx, booking, subject, "booking_rescheduled", htmlBody, textBody)
+}
+
 func (s *Service) presentations(booking calendar.Booking) (slotPresentation, *slotPresentation) {
 	clientSlot, ok := s.slotForTimezone(booking, booking.ClientTimezone)
 	if !ok {
@@ -223,6 +245,130 @@ func (s *Service) renderConfirmation(booking calendar.Booking, clientSlot slotPr
 	textBuilder.WriteString("\nДо встречи,\nНаталья Кудинова\n")
 
 	return htmlBuilder.String(), textBuilder.String()
+}
+
+func (s *Service) renderCancellation(booking calendar.Booking, clientSlot slotPresentation, moscowSlot *slotPresentation) (string, string) {
+	name := strings.TrimSpace(booking.Name)
+	if name == "" {
+		name = "Здравствуйте"
+	} else {
+		name = "Здравствуйте, " + name
+	}
+
+	var htmlBuilder strings.Builder
+	htmlBuilder.WriteString("<div style=\"font-family:Helvetica,Arial,sans-serif;font-size:16px;line-height:1.6;color:#111\">")
+	htmlBuilder.WriteString("<p>" + html.EscapeString(name) + ".</p>")
+	htmlBuilder.WriteString("<p>Ваша запись отменена.</p>")
+	htmlBuilder.WriteString("<p><strong>Изначальный слот:</strong> " + html.EscapeString(clientSlot.Date) + ", " + html.EscapeString(clientSlot.Weekday) + ", " + html.EscapeString(clientSlot.Time) + " (" + html.EscapeString(clientSlot.Timezone) + ")</p>")
+	if moscowSlot != nil {
+		htmlBuilder.WriteString("<p><strong>По Москве:</strong> " + html.EscapeString(moscowSlot.Date) + ", " + html.EscapeString(moscowSlot.Weekday) + ", " + html.EscapeString(moscowSlot.Time) + " (" + html.EscapeString(moscowSlot.Timezone) + ")</p>")
+	}
+	if s.replyTo != "" {
+		htmlBuilder.WriteString("<p>Если хотите подобрать новое время, просто ответьте на это письмо.</p>")
+	}
+	htmlBuilder.WriteString("<p>Наталья Кудинова</p>")
+	htmlBuilder.WriteString("</div>")
+
+	var textBuilder strings.Builder
+	textBuilder.WriteString(name + ".\n\n")
+	textBuilder.WriteString("Ваша запись отменена.\n\n")
+	textBuilder.WriteString("Изначальный слот: " + clientSlot.Date + ", " + clientSlot.Weekday + ", " + clientSlot.Time + " (" + clientSlot.Timezone + ")\n")
+	if moscowSlot != nil {
+		textBuilder.WriteString("По Москве: " + moscowSlot.Date + ", " + moscowSlot.Weekday + ", " + moscowSlot.Time + " (" + moscowSlot.Timezone + ")\n")
+	}
+	if s.replyTo != "" {
+		textBuilder.WriteString("Если хотите подобрать новое время, просто ответьте на это письмо.\n")
+	}
+	textBuilder.WriteString("\nНаталья Кудинова\n")
+
+	return htmlBuilder.String(), textBuilder.String()
+}
+
+func (s *Service) renderRescheduled(booking calendar.Booking, clientSlot slotPresentation, moscowSlot *slotPresentation) (string, string) {
+	name := strings.TrimSpace(booking.Name)
+	if name == "" {
+		name = "Здравствуйте"
+	} else {
+		name = "Здравствуйте, " + name
+	}
+
+	var htmlBuilder strings.Builder
+	htmlBuilder.WriteString("<div style=\"font-family:Helvetica,Arial,sans-serif;font-size:16px;line-height:1.6;color:#111\">")
+	htmlBuilder.WriteString("<p>" + html.EscapeString(name) + ".</p>")
+	htmlBuilder.WriteString("<p>Ваша запись перенесена на " + html.EscapeString(clientSlot.Date) + ".</p>")
+	htmlBuilder.WriteString("<p><strong>Новое время:</strong> " + html.EscapeString(clientSlot.Date) + ", " + html.EscapeString(clientSlot.Weekday) + ", " + html.EscapeString(clientSlot.Time) + " (" + html.EscapeString(clientSlot.Timezone) + ")</p>")
+	if moscowSlot != nil {
+		htmlBuilder.WriteString("<p><strong>По Москве:</strong> " + html.EscapeString(moscowSlot.Date) + ", " + html.EscapeString(moscowSlot.Weekday) + ", " + html.EscapeString(moscowSlot.Time) + " (" + html.EscapeString(moscowSlot.Timezone) + ")</p>")
+	}
+	if s.replyTo != "" {
+		htmlBuilder.WriteString("<p>Если новое время не подходит, просто ответьте на это письмо.</p>")
+	}
+	htmlBuilder.WriteString("<p>Наталья Кудинова</p>")
+	htmlBuilder.WriteString("</div>")
+
+	var textBuilder strings.Builder
+	textBuilder.WriteString(name + ".\n\n")
+	textBuilder.WriteString("Ваша запись перенесена на " + clientSlot.Date + ".\n\n")
+	textBuilder.WriteString("Новое время: " + clientSlot.Date + ", " + clientSlot.Weekday + ", " + clientSlot.Time + " (" + clientSlot.Timezone + ")\n")
+	if moscowSlot != nil {
+		textBuilder.WriteString("По Москве: " + moscowSlot.Date + ", " + moscowSlot.Weekday + ", " + moscowSlot.Time + " (" + moscowSlot.Timezone + ")\n")
+	}
+	if s.replyTo != "" {
+		textBuilder.WriteString("Если новое время не подходит, просто ответьте на это письмо.\n")
+	}
+	textBuilder.WriteString("\nНаталья Кудинова\n")
+
+	return htmlBuilder.String(), textBuilder.String()
+}
+
+func (s *Service) sendBookingEmail(ctx context.Context, booking calendar.Booking, subject, tagType, htmlBody, textBody string) error {
+	recipient := strings.TrimSpace(booking.Email)
+	if recipient == "" {
+		return fmt.Errorf("booking %s has empty email", booking.ID)
+	}
+
+	payload := sendEmailRequest{
+		From:    s.from,
+		To:      []string{recipient},
+		Subject: subject,
+		HTML:    htmlBody,
+		Text:    textBody,
+		Tags: []emailTag{
+			{Name: "type", Value: tagType},
+			{Name: "booking_id", Value: sanitizeTagValue(booking.ID)},
+		},
+	}
+	if s.replyTo != "" {
+		payload.ReplyTo = []string{s.replyTo}
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	request, err := http.NewRequestWithContext(ctx, http.MethodPost, s.endpoint, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Authorization", "Bearer "+s.apiKey)
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Idempotency-Key", tagType+"-"+booking.ID+"-"+sanitizeTagValue(subject))
+
+	response, err := s.client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	responseBody, err := io.ReadAll(io.LimitReader(response.Body, 32*1024))
+	if err != nil {
+		return err
+	}
+	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+		return fmt.Errorf("resend status %d: %s", response.StatusCode, strings.TrimSpace(string(responseBody)))
+	}
+	return nil
 }
 
 func sanitizeTagValue(value string) string {

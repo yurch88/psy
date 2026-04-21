@@ -7,13 +7,14 @@ import (
 	"time"
 )
 
-func TestConfirmBlocksSlotAndRejectsOtherPendingRequests(t *testing.T) {
+func TestPendingBookingBlocksSlotAndCancelReopensIt(t *testing.T) {
 	location, err := time.LoadLocation("Europe/Moscow")
 	if err != nil {
 		t.Fatalf("load location: %v", err)
 	}
 
-	service, err := NewService("Europe/Moscow", filepath.Join(t.TempDir(), "bookings.jsonl"))
+	tempDir := t.TempDir()
+	service, err := NewService("Europe/Moscow", filepath.Join(tempDir, "bookings.jsonl"), filepath.Join(tempDir, "slot-rules.json"))
 	if err != nil {
 		t.Fatalf("new service: %v", err)
 	}
@@ -34,18 +35,8 @@ func TestConfirmBlocksSlotAndRejectsOtherPendingRequests(t *testing.T) {
 		t.Fatalf("book first: %v", err)
 	}
 
-	second, err := service.Book(context.Background(), BookingRequest{
-		SlotID: slot.ID,
-		Name:   "Петр Петров",
-		Email:  "petr@example.com",
-		Phone:  "+79990000002",
-	})
-	if err != nil {
-		t.Fatalf("book second: %v", err)
-	}
-
-	if !containsSlot(service.AvailableSlots(), slot.ID) {
-		t.Fatalf("pending booking should not block slot %s", slot.ID)
+	if containsSlot(service.AvailableSlots(), slot.ID) {
+		t.Fatalf("pending booking should block slot %s", slot.ID)
 	}
 
 	result, err := service.Review(context.Background(), first.ID, ReviewActionConfirm)
@@ -70,12 +61,12 @@ func TestConfirmBlocksSlotAndRejectsOtherPendingRequests(t *testing.T) {
 		t.Fatalf("expected confirmed slot %s to be disabled in full slot list", slot.ID)
 	}
 
-	secondReview, err := service.Review(context.Background(), second.ID, ReviewActionConfirm)
-	if err != nil {
-		t.Fatalf("review second after confirmation: %v", err)
+	if _, err := service.Cancel(context.Background(), first.ID); err != nil {
+		t.Fatalf("cancel booking: %v", err)
 	}
-	if secondReview.Booking.EffectiveStatus() != BookingStatusRejected {
-		t.Fatalf("expected second booking to be rejected, got %s", secondReview.Booking.EffectiveStatus())
+
+	if !containsSlot(service.AvailableSlots(), slot.ID) {
+		t.Fatalf("cancelled booking should reopen slot %s", slot.ID)
 	}
 }
 
@@ -85,7 +76,8 @@ func TestRejectKeepsSlotAvailable(t *testing.T) {
 		t.Fatalf("load location: %v", err)
 	}
 
-	service, err := NewService("Europe/Moscow", filepath.Join(t.TempDir(), "bookings.jsonl"))
+	tempDir := t.TempDir()
+	service, err := NewService("Europe/Moscow", filepath.Join(tempDir, "bookings.jsonl"), filepath.Join(tempDir, "slot-rules.json"))
 	if err != nil {
 		t.Fatalf("new service: %v", err)
 	}
@@ -104,6 +96,10 @@ func TestRejectKeepsSlotAvailable(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatalf("book: %v", err)
+	}
+
+	if containsSlot(service.AvailableSlots(), slot.ID) {
+		t.Fatalf("pending booking should block slot %s", slot.ID)
 	}
 
 	if _, err := service.Review(context.Background(), booking.ID, ReviewActionReject); err != nil {
