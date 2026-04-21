@@ -177,4 +177,25 @@
     renderSelected();
     setActive(selectedSlots[0] || '');
   });
+
+  document.querySelectorAll('[data-weekday-card]').forEach((card) => {
+    const toggle = card.querySelector('[data-weekday-toggle]');
+    const toggleLabel = card.querySelector('[data-weekday-toggle-label]');
+    const statusLabel = card.querySelector('[data-weekday-status]');
+
+    if (!toggle || !toggleLabel || !statusLabel) {
+      return;
+    }
+
+    const syncWeekdayCard = () => {
+      const enabled = toggle.checked;
+      card.classList.toggle('is-enabled', enabled);
+      card.classList.toggle('is-disabled', !enabled);
+      toggleLabel.textContent = enabled ? 'Включено' : 'Выключено';
+      statusLabel.textContent = enabled ? 'Рабочий день' : 'День выключен';
+    };
+
+    toggle.addEventListener('change', syncWeekdayCard);
+    syncWeekdayCard();
+  });
 })();

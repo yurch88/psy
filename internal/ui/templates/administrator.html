@@ -49,15 +49,15 @@
                 <form class="admin-form" method="post" action="/administrator/slots/weekly">
                   <div class="admin-weekly-grid">
                     {{range .AdminWeeklySchedule}}
-                      <article class="admin-weekday-card {{if .Enabled}}is-enabled{{end}}">
+                      <article class="admin-weekday-card {{if .Enabled}}is-enabled{{else}}is-disabled{{end}}" data-weekday-card>
                         <div class="admin-weekday-card__header">
                           <div>
                             <h3 class="admin-weekday-card__title">{{.Label}}</h3>
-                            <p class="admin-weekday-card__text">{{if .Enabled}}Рабочий день{{else}}Сейчас день выключен{{end}}</p>
+                            <p class="admin-weekday-card__text" data-weekday-status>{{if .Enabled}}Рабочий день{{else}}День выключен{{end}}</p>
                           </div>
                           <label class="admin-day-toggle">
-                            <input type="checkbox" name="enabled_{{.Day}}" value="1" {{if .Enabled}}checked{{end}}>
-                            <span>{{if .Enabled}}Включен{{else}}Включить{{end}}</span>
+                            <input type="checkbox" name="enabled_{{.Day}}" value="1" {{if .Enabled}}checked{{end}} data-weekday-toggle>
+                            <span data-weekday-toggle-label>{{if .Enabled}}Включено{{else}}Выключено{{end}}</span>
                           </label>
                         </div>
 
