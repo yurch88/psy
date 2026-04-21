@@ -919,6 +919,10 @@ svg {
   background-size: cover;
 }
 
+.memo-text h2 {
+  margin-bottom: 20px;
+}
+
 .memo-text p {
   margin: 0 0 18px;
 }
