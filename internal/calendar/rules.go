@@ -36,6 +36,11 @@ type SlotRuleInput struct {
 	DurationMinutes int
 }
 
+type WeeklyScheduleDay struct {
+	Day        int
+	StartTimes []string
+}
+
 type RuleStore struct {
 	path string
 	mu   sync.Mutex

@@ -2,11 +2,59 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
 	"psy/internal/calendar"
 )
+
+func (h *Handler) administratorWeeklyScheduleSave(w http.ResponseWriter, r *http.Request) {
+	if !requireMethod(w, r, http.MethodPost) || !h.administratorRequireAuth(w, r) {
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		h.renderAdministratorPage(w, r, PageData{
+			AdminTab:   "calendar",
+			AdminError: "Не удалось обработать форму недельного расписания.",
+		}, http.StatusBadRequest)
+		return
+	}
+
+	days := make([]calendar.WeeklyScheduleDay, 0, 7)
+	views := make([]AdminWeekdayScheduleView, 0, 7)
+	for day := 1; day <= 7; day++ {
+		enabled := strings.TrimSpace(r.FormValue(fmt.Sprintf("enabled_%d", day))) != ""
+		times := splitTextareaLines(r.FormValue(fmt.Sprintf("times_%d", day)))
+
+		views = append(views, AdminWeekdayScheduleView{
+			Day:     day,
+			Label:   adminWeekdayName(day),
+			Enabled: enabled,
+			Times:   strings.Join(times, "\n"),
+		})
+
+		if !enabled {
+			continue
+		}
+
+		days = append(days, calendar.WeeklyScheduleDay{
+			Day:        day,
+			StartTimes: times,
+		})
+	}
+
+	if err := h.calendar.ReplaceWeeklySchedule(r.Context(), days); err != nil {
+		h.renderAdministratorPage(w, r, PageData{
+			AdminTab:            "calendar",
+			AdminError:          adminCalendarError(err),
+			AdminWeeklySchedule: views,
+		}, http.StatusBadRequest)
+		return
+	}
+
+	http.Redirect(w, r, "/administrator?tab=calendar&notice=weekly-schedule-saved", http.StatusSeeOther)
+}
 
 func (h *Handler) administratorSlotsCreate(w http.ResponseWriter, r *http.Request) {
 	if !requireMethod(w, r, http.MethodPost) || !h.administratorRequireAuth(w, r) {

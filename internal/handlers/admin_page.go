@@ -51,6 +51,9 @@ func (h *Handler) renderAdministratorPage(w http.ResponseWriter, r *http.Request
 		data.AdminNotice = overrides.AdminNotice
 		data.AdminNoticeClass = overrides.AdminNoticeClass
 	}
+	if len(overrides.AdminWeeklySchedule) > 0 {
+		data.AdminWeeklySchedule = overrides.AdminWeeklySchedule
+	}
 	if overrides.AdminSlotMode != "" {
 		data.AdminSlotMode = overrides.AdminSlotMode
 	}
@@ -89,6 +92,7 @@ func (h *Handler) renderAdministratorPage(w http.ResponseWriter, r *http.Request
 	}
 
 	data.AdminAuthenticated = true
+	data.AdminWeeklySchedule = h.adminWeeklyScheduleViews()
 	data.AdminSlotRules = h.adminSlotRuleViews()
 	data.AdminBookings = h.adminBookingViews()
 	data.AdminAvailableSlots = h.adminAvailableSlotOptions()
@@ -137,6 +141,8 @@ func adminNotice(code string) (string, string) {
 	switch code {
 	case "slot-created":
 		return "Слоты сохранены.", "is-success"
+	case "weekly-schedule-saved":
+		return "Расписание по дням недели сохранено.", "is-success"
 	case "slot-deleted":
 		return "Правило слотов удалено.", "is-success"
 	case "booking-cancelled":
@@ -161,19 +167,49 @@ func (h *Handler) adminSlotRuleViews() []AdminSlotRuleView {
 
 	views := make([]AdminSlotRuleView, 0, len(rules))
 	for _, rule := range rules {
+		if rule.Scope != calendar.SlotRuleScopeDate {
+			continue
+		}
 		view := AdminSlotRuleView{
 			ID:         rule.ID,
 			TimesLabel: strings.Join(rule.StartTimes, ", "),
 		}
-		switch rule.Scope {
-		case calendar.SlotRuleScopeDate:
-			view.ScopeLabel = "Только на дату"
-			view.PatternLabel = rule.Date
-		default:
-			view.ScopeLabel = "Каждую неделю"
-			view.PatternLabel = adminWeekdaysLabel(rule.Weekdays)
-		}
+		view.ScopeLabel = "Только на дату"
+		view.PatternLabel = rule.Date
 		views = append(views, view)
+	}
+	return views
+}
+
+func (h *Handler) adminWeeklyScheduleViews() []AdminWeekdayScheduleView {
+	schedule, err := h.calendar.WeeklySchedule()
+	if err != nil {
+		h.logger.Error("list weekly schedule", "error", err)
+		return defaultAdminWeeklyScheduleViews()
+	}
+
+	views := make([]AdminWeekdayScheduleView, 0, len(schedule))
+	for _, day := range schedule {
+		views = append(views, AdminWeekdayScheduleView{
+			Day:     day.Day,
+			Label:   adminWeekdayName(day.Day),
+			Enabled: len(day.StartTimes) > 0,
+			Times:   strings.Join(day.StartTimes, "\n"),
+		})
+	}
+	if len(views) == 0 {
+		return defaultAdminWeeklyScheduleViews()
+	}
+	return views
+}
+
+func defaultAdminWeeklyScheduleViews() []AdminWeekdayScheduleView {
+	views := make([]AdminWeekdayScheduleView, 0, 7)
+	for day := 1; day <= 7; day++ {
+		views = append(views, AdminWeekdayScheduleView{
+			Day:   day,
+			Label: adminWeekdayName(day),
+		})
 	}
 	return views
 }
@@ -199,6 +235,25 @@ func adminWeekdaysLabel(days []int) string {
 		}
 	}
 	return strings.Join(labels, ", ")
+}
+
+func adminWeekdayName(day int) string {
+	switch day {
+	case 1:
+		return "Понедельник"
+	case 2:
+		return "Вторник"
+	case 3:
+		return "Среда"
+	case 4:
+		return "Четверг"
+	case 5:
+		return "Пятница"
+	case 6:
+		return "Суббота"
+	default:
+		return "Воскресенье"
+	}
 }
 
 func (h *Handler) adminBookingViews() []AdminBookingView {

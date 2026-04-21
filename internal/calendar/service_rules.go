@@ -2,12 +2,20 @@ package calendar
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
 	"sort"
 	"time"
 )
 
 func (s *Service) ensureDefaultRules() error {
+	if _, err := os.Stat(s.rules.path); err == nil {
+		return nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+
 	rules, err := s.rules.List()
 	if err != nil {
 		return err
@@ -53,6 +61,85 @@ func (s *Service) AddRule(ctx context.Context, input SlotRuleInput) (SlotRule, e
 	}
 
 	return rule, nil
+}
+
+func (s *Service) WeeklySchedule() ([]WeeklyScheduleDay, error) {
+	rules, err := s.rules.List()
+	if err != nil {
+		return nil, err
+	}
+
+	byDay := make(map[int]map[string]bool)
+	for _, rule := range rules {
+		if rule.Scope != SlotRuleScopeWeekly {
+			continue
+		}
+		for _, day := range rule.Weekdays {
+			if byDay[day] == nil {
+				byDay[day] = make(map[string]bool)
+			}
+			for _, startTime := range rule.StartTimes {
+				byDay[day][startTime] = true
+			}
+		}
+	}
+
+	result := make([]WeeklyScheduleDay, 0, 7)
+	for day := 1; day <= 7; day++ {
+		startTimes := make([]string, 0, len(byDay[day]))
+		for startTime := range byDay[day] {
+			startTimes = append(startTimes, startTime)
+		}
+		sort.Strings(startTimes)
+		result = append(result, WeeklyScheduleDay{
+			Day:        day,
+			StartTimes: startTimes,
+		})
+	}
+
+	return result, nil
+}
+
+func (s *Service) ReplaceWeeklySchedule(ctx context.Context, days []WeeklyScheduleDay) error {
+	rules, err := s.rules.List()
+	if err != nil {
+		return err
+	}
+
+	filtered := make([]SlotRule, 0, len(rules))
+	for _, rule := range rules {
+		if rule.Scope == SlotRuleScopeWeekly {
+			continue
+		}
+		filtered = append(filtered, rule)
+	}
+
+	for _, day := range days {
+		if len(day.StartTimes) == 0 {
+			continue
+		}
+
+		normalized, err := normalizeSlotRuleInput(SlotRuleInput{
+			Scope:           SlotRuleScopeWeekly,
+			Weekdays:        []int{day.Day},
+			StartTimes:      day.StartTimes,
+			DurationMinutes: 55,
+		})
+		if err != nil {
+			return err
+		}
+
+		filtered = append(filtered, SlotRule{
+			ID:              fmt.Sprintf("rule-%d-%d", s.now().UnixNano(), s.seq.Add(1)),
+			Scope:           SlotRuleScopeWeekly,
+			Weekdays:        normalized.Weekdays,
+			StartTimes:      normalized.StartTimes,
+			DurationMinutes: normalized.DurationMinutes,
+			CreatedAt:       s.now().UTC(),
+		})
+	}
+
+	return s.rules.Save(ctx, filtered)
 }
 
 func (s *Service) DeleteRule(ctx context.Context, id string) error {

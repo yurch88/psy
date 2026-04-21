@@ -39,39 +39,43 @@
             </div>
 
             <div class="admin-grid admin-grid-2">
-              <div class="admin-block">
+              <div class="admin-block admin-block-wide">
                 <div class="admin-block__header">
-                  <p class="admin-block__eyebrow">Повторяющийся график</p>
-                  <h2 class="t-heading t-heading_md">Слоты по дням недели</h2>
-                  <p class="admin-block__intro">Используйте этот блок, если одно и то же время должно повторяться каждую неделю.</p>
+                  <p class="admin-block__eyebrow">Основное расписание</p>
+                  <h2 class="t-heading t-heading_md">Неделя по дням</h2>
+                  <p class="admin-block__intro">Теперь неделя настраивается как обычное расписание: день можно включить или выключить, а внутри него указать свои интервалы времени.</p>
                 </div>
 
-                <form class="admin-form" method="post" action="/administrator/slots/create">
-                  <input type="hidden" name="mode" value="weekly">
+                <form class="admin-form" method="post" action="/administrator/slots/weekly">
+                  <div class="admin-weekly-grid">
+                    {{range .AdminWeeklySchedule}}
+                      <article class="admin-weekday-card {{if .Enabled}}is-enabled{{end}}">
+                        <div class="admin-weekday-card__header">
+                          <div>
+                            <h3 class="admin-weekday-card__title">{{.Label}}</h3>
+                            <p class="admin-weekday-card__text">{{if .Enabled}}Рабочий день{{else}}Сейчас день выключен{{end}}</p>
+                          </div>
+                          <label class="admin-day-toggle">
+                            <input type="checkbox" name="enabled_{{.Day}}" value="1" {{if .Enabled}}checked{{end}}>
+                            <span>{{if .Enabled}}Включен{{else}}Включить{{end}}</span>
+                          </label>
+                        </div>
 
-                  <div class="admin-weekdays">
-                    <span class="admin-field-title">Выберите дни недели</span>
-                    <label><input type="checkbox" name="weekday" value="1" {{if containsInt .AdminSlotWeekdays 1}}checked{{end}}> <span>Понедельник</span></label>
-                    <label><input type="checkbox" name="weekday" value="2" {{if containsInt .AdminSlotWeekdays 2}}checked{{end}}> <span>Вторник</span></label>
-                    <label><input type="checkbox" name="weekday" value="3" {{if containsInt .AdminSlotWeekdays 3}}checked{{end}}> <span>Среда</span></label>
-                    <label><input type="checkbox" name="weekday" value="4" {{if containsInt .AdminSlotWeekdays 4}}checked{{end}}> <span>Четверг</span></label>
-                    <label><input type="checkbox" name="weekday" value="5" {{if containsInt .AdminSlotWeekdays 5}}checked{{end}}> <span>Пятница</span></label>
-                    <label><input type="checkbox" name="weekday" value="6" {{if containsInt .AdminSlotWeekdays 6}}checked{{end}}> <span>Суббота</span></label>
-                    <label><input type="checkbox" name="weekday" value="7" {{if containsInt .AdminSlotWeekdays 7}}checked{{end}}> <span>Воскресенье</span></label>
+                        <label>
+                          <span>Время начала слотов</span>
+                          <textarea name="times_{{.Day}}" rows="5" placeholder="09:00&#10;10:15&#10;13:35">{{.Times}}</textarea>
+                        </label>
+                      </article>
+                    {{end}}
                   </div>
 
-                  <label>
-                    <span>Время начала слотов</span>
-                    <textarea name="times" rows="7" placeholder="09:00&#10;10:15&#10;13:35">{{if eq .AdminSlotMode "weekly"}}{{.AdminSlotTimes}}{{end}}</textarea>
-                  </label>
-
                   <div class="admin-format">
-                    <strong>Как заполнять</strong>
-                    <p>Каждое время указывайте с новой строки. Например, если по понедельникам нужны приёмы в 09:00, 10:15 и 13:35, просто впишите эти три строки.</p>
+                    <strong>Как работает</strong>
+                    <p>Если день включен, укажите в его карточке нужные времена с новой строки. Если день выключен, слотов этого дня у клиентов не будет.</p>
                   </div>
 
                   <button class="t-btn t-btnflex t-btnflex_type_bbutton t-btnflex_md admin-submit" type="submit">
-                    <span class="t-btnflex__text">Сохранить по дням недели</span>
+                    <span class="t-btnflex__text">Сохранить расписание недели</span>
                   </button>
                 </form>
               </div>
@@ -107,11 +111,11 @@
                 </form>
               </div>
 
-              <div class="admin-block admin-block-wide">
+              <div class="admin-block">
                 <div class="admin-block__header">
-                  <p class="admin-block__eyebrow">Активные правила</p>
-                  <h2 class="t-heading t-heading_md">Что сейчас опубликовано в календаре</h2>
-                  <p class="admin-block__intro">Здесь отображаются все действующие настройки слотов. Любое правило можно удалить отдельной кнопкой.</p>
+                  <p class="admin-block__eyebrow">Разовые даты</p>
+                  <h2 class="t-heading t-heading_md">Что добавлено отдельно от недели</h2>
+                  <p class="admin-block__intro">Здесь отображаются только точечные правила на конкретные даты. Их можно удалять отдельно, не затрагивая основное недельное расписание.</p>
                 </div>
 
                 {{if .AdminSlotRules}}
@@ -131,7 +135,7 @@
                     {{end}}
                   </div>
                 {{else}}
-                  <div class="admin-empty"><p class="t-descr t-descr_md">Пока активных правил нет.</p></div>
+                  <div class="admin-empty"><p class="t-descr t-descr_md">Пока разовых дат нет.</p></div>
                 {{end}}
               </div>
             </div>

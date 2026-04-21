@@ -56,6 +56,7 @@ type PageData struct {
 	AdminNotice         string
 	AdminNoticeClass    string
 	AdminBookings       []AdminBookingView
+	AdminWeeklySchedule []AdminWeekdayScheduleView
 	AdminSlotRules      []AdminSlotRuleView
 	AdminAvailableSlots []AdminSlotOption
 	AdminSlotMode       string
@@ -85,6 +86,13 @@ type AdminSlotRuleView struct {
 	ScopeLabel   string
 	PatternLabel string
 	TimesLabel   string
+}
+
+type AdminWeekdayScheduleView struct {
+	Day     int
+	Label   string
+	Enabled bool
+	Times   string
 }
 
 type AdminSlotOption struct {
@@ -191,6 +199,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/administrator", h.administrator)
 	mux.HandleFunc("/administrator/login", h.administratorLogin)
 	mux.HandleFunc("/administrator/logout", h.administratorLogout)
+	mux.HandleFunc("/administrator/slots/weekly", h.administratorWeeklyScheduleSave)
 	mux.HandleFunc("/administrator/slots/create", h.administratorSlotsCreate)
 	mux.HandleFunc("/administrator/slots/delete", h.administratorSlotsDelete)
 	mux.HandleFunc("/administrator/bookings/cancel", h.administratorBookingCancel)
