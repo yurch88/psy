@@ -1,0 +1,88 @@
+{{define "content"}}
+<section class="r t-rec t-rec_pt_135 t-rec_pb_120 admin-record">
+  <div class="t-container">
+    <div class="admin-shell">
+      {{if .AdminAuthenticated}}
+        <div class="admin-card admin-card-wide">
+          <div class="admin-card__header">
+            <div>
+              <h1 class="t-title t-title_xxl">Админ-панель</h1>
+              <p class="t-descr t-descr_md admin-subtitle">Заявки на консультации и их текущий статус.</p>
+            </div>
+            <form method="post" action="/administrator/logout">
+              <button class="t-btn t-btnflex t-btnflex_type_button t-btnflex_md admin-logout" type="submit">
+                <span class="t-btnflex__text">ВЫЙТИ</span>
+              </button>
+            </form>
+          </div>
+
+          {{if .AdminError}}
+            <div class="form-errors" role="alert">
+              <p>{{.AdminError}}</p>
+            </div>
+          {{end}}
+
+          {{if .AdminBookings}}
+            <div class="admin-bookings">
+              {{range .AdminBookings}}
+                <article class="admin-booking-card">
+                  <div class="admin-booking-card__header">
+                    <div>
+                      <h2 class="t-heading t-heading_md">{{.Name}}</h2>
+                      <p class="admin-booking-slot">Слот: {{.SlotLabel}}</p>
+                    </div>
+                    <span class="admin-status {{.StatusClass}}">{{.StatusLabel}}</span>
+                  </div>
+                  <div class="admin-booking-meta">
+                    <p><strong>E-mail:</strong> <a href="mailto:{{.Email}}">{{.Email}}</a></p>
+                    <p><strong>Телефон:</strong> <a href="tel:{{.Phone}}">{{.Phone}}</a></p>
+                    <p><strong>Часовой пояс:</strong> {{if .ClientTimezone}}{{.ClientTimezone}}{{else}}Не указан{{end}}</p>
+                    <p><strong>Создана:</strong> {{.CreatedAtLabel}}</p>
+                    <p><strong>ID:</strong> <span class="admin-booking-id">{{.ID}}</span></p>
+                    {{if .Comment}}<p><strong>Комментарий:</strong> {{.Comment}}</p>{{end}}
+                  </div>
+                </article>
+              {{end}}
+            </div>
+          {{else}}
+            <div class="admin-empty">
+              <p class="t-descr t-descr_md">Пока заявок нет.</p>
+            </div>
+          {{end}}
+        </div>
+      {{else}}
+        <div class="admin-card admin-login-card">
+          <h1 class="t-title t-title_xxl">Вход в админ-панель</h1>
+          <p class="t-descr t-descr_md admin-subtitle">Адрес: <strong>/administrator</strong></p>
+
+          {{if .AdminError}}
+            <div class="form-errors" role="alert">
+              <p>{{.AdminError}}</p>
+            </div>
+          {{end}}
+
+          {{if .AdminEnabled}}
+            <form class="admin-form" method="post" action="/administrator/login">
+              <label>
+                <span>Логин</span>
+                <input name="login" autocomplete="username" value="{{.AdminLogin}}" required>
+              </label>
+              <label>
+                <span>Пароль</span>
+                <input name="password" type="password" autocomplete="current-password" required>
+              </label>
+              <button class="t-btn t-btnflex t-btnflex_type_bbutton t-btnflex_md admin-submit" type="submit">
+                <span class="t-btnflex__text">ВОЙТИ</span>
+              </button>
+            </form>
+          {{else}}
+            <div class="admin-empty">
+              <p class="t-descr t-descr_md">Админ-панель ещё не настроена. Добавьте логин и пароль в боевой <code>.env</code>.</p>
+            </div>
+          {{end}}
+        </div>
+      {{end}}
+    </div>
+  </div>
+</section>
+{{end}}

@@ -24,6 +24,9 @@ type Handler struct {
 	rates    *rates.Service
 	notifier BookingNotifier
 	logger   *slog.Logger
+
+	adminLogin string
+	adminPass  string
 }
 
 type PageData struct {
@@ -35,6 +38,25 @@ type PageData struct {
 	Form        BookingForm
 	Errors      []string
 	Booking     *calendar.Booking
+
+	AdminEnabled       bool
+	AdminAuthenticated bool
+	AdminLogin         string
+	AdminError         string
+	AdminBookings      []AdminBookingView
+}
+
+type AdminBookingView struct {
+	ID             string
+	Name           string
+	Email          string
+	Phone          string
+	ClientTimezone string
+	Comment        string
+	SlotLabel      string
+	CreatedAtLabel string
+	StatusLabel    string
+	StatusClass    string
 }
 
 type SlotDayView struct {
@@ -60,14 +82,16 @@ type BookingForm struct {
 	Comment        string
 }
 
-func New(site content.Site, renderer *ui.Renderer, calendarService *calendar.Service, rateService *rates.Service, notifier BookingNotifier, logger *slog.Logger) *Handler {
+func New(site content.Site, renderer *ui.Renderer, calendarService *calendar.Service, rateService *rates.Service, notifier BookingNotifier, logger *slog.Logger, adminLogin, adminPass string) *Handler {
 	return &Handler{
-		site:     site,
-		renderer: renderer,
-		calendar: calendarService,
-		rates:    rateService,
-		notifier: notifier,
-		logger:   logger,
+		site:       site,
+		renderer:   renderer,
+		calendar:   calendarService,
+		rates:      rateService,
+		notifier:   notifier,
+		logger:     logger,
+		adminLogin: adminLogin,
+		adminPass:  adminPass,
 	}
 }
 
@@ -78,6 +102,9 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/privacy", h.privacy)
 	mux.HandleFunc("/booking", h.booking)
 	mux.HandleFunc("/booking/submit", h.submitBooking)
+	mux.HandleFunc("/administrator", h.administrator)
+	mux.HandleFunc("/administrator/login", h.administratorLogin)
+	mux.HandleFunc("/administrator/logout", h.administratorLogout)
 	mux.HandleFunc("/healthz", h.healthz)
 }
 

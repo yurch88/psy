@@ -48,7 +48,7 @@ func New(cfg config.Config, logger *slog.Logger) (*App, error) {
 	}
 
 	rateService := rates.NewService(cfg.USDRateURL, cfg.USDRateTimeout)
-	pageHandler := handlers.New(site, renderer, calendarService, rateService, telegramService, logger)
+	pageHandler := handlers.New(site, renderer, calendarService, rateService, telegramService, logger, cfg.AdminLogin, cfg.AdminPass)
 
 	mux := http.NewServeMux()
 	pageHandler.Register(mux)

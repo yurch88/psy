@@ -21,6 +21,8 @@ type Config struct {
 	TelegramURL  string
 	MaxURL       string
 	CalendarURL  string
+	AdminLogin   string
+	AdminPass    string
 	EmailFrom    string
 	EmailReplyTo string
 
@@ -47,6 +49,8 @@ func FromEnv() Config {
 		TelegramURL:           telegramURL(),
 		MaxURL:                env("MAX_URL", "#contacts"),
 		CalendarURL:           calendarURL(),
+		AdminLogin:            env("ADMIN_USERNAME", ""),
+		AdminPass:             env("ADMIN_PASSWORD", ""),
 		EmailFrom:             env("EMAIL_FROM", "Natalya Kudinova <booking@kudinovanatalya-psy.ru>"),
 		EmailReplyTo:          env("EMAIL_REPLY_TO", env("CONTACT_EMAIL", "natalia.kudinova.psy@gmail.com")),
 		TelegramBotToken:      env("TG_BOT_TOKEN", ""),

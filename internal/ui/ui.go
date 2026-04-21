@@ -17,7 +17,7 @@ type Renderer struct {
 
 func NewRenderer() (*Renderer, error) {
 	renderer := &Renderer{pages: make(map[string]*template.Template)}
-	for _, page := range []string{"home", "rules", "memo", "privacy", "booking", "thanks"} {
+	for _, page := range []string{"home", "rules", "memo", "privacy", "booking", "thanks", "administrator"} {
 		parsed, err := template.New(page).Funcs(template.FuncMap{
 			"year": func() int { return time.Now().Year() },
 			"mod":  func(a, b int) int { return a % b },

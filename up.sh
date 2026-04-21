@@ -63,6 +63,8 @@ EMAIL_REPLY_TO="${EMAIL_REPLY_TO:-$CONTACT_EMAIL}"
 MAX_URL="${MAX_URL:-#contacts}"
 CALENDAR_URL="${CALENDAR_URL:-/booking}"
 USD_RATE_URL="${USD_RATE_URL:-https://www.cbr-xml-daily.ru/daily_json.js}"
+ADMIN_USERNAME="${ADMIN_USERNAME:-}"
+ADMIN_PASSWORD="${ADMIN_PASSWORD:-}"
 
 # =========================
 # LOGGING
@@ -291,6 +293,12 @@ ensure_env_file() {
     if ! grep -q '^EMAIL_REPLY_TO=' "$ENV_FILE"; then
       printf 'EMAIL_REPLY_TO=%s\n' "$EMAIL_REPLY_TO" >>"$ENV_FILE"
     fi
+    if ! grep -q '^ADMIN_USERNAME=' "$ENV_FILE"; then
+      printf 'ADMIN_USERNAME=%s\n' "$ADMIN_USERNAME" >>"$ENV_FILE"
+    fi
+    if ! grep -q '^ADMIN_PASSWORD=' "$ENV_FILE"; then
+      printf 'ADMIN_PASSWORD=%s\n' "$ADMIN_PASSWORD" >>"$ENV_FILE"
+    fi
     return 0
   fi
 
@@ -310,6 +318,8 @@ EMAIL_REPLY_TO=$EMAIL_REPLY_TO
 MAX_URL=$MAX_URL
 CALENDAR_URL=$CALENDAR_URL
 USD_RATE_URL=$USD_RATE_URL
+ADMIN_USERNAME=$ADMIN_USERNAME
+ADMIN_PASSWORD=$ADMIN_PASSWORD
 EOF
   chmod 640 "$ENV_FILE"
   chown root:"$APP_GROUP" "$ENV_FILE"
