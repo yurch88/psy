@@ -273,6 +273,7 @@ func adminDateSlotOptions() []AdminDateSlotOption {
 
 		options = append(options, AdminDateSlotOption{
 			Value: fmt.Sprintf("%02d:%02d", startHour, startMinute),
+			End:   fmt.Sprintf("%02d:%02d", endHour, endMinute),
 			Label: fmt.Sprintf("%02d:%02d-%02d:%02d", startHour, startMinute, endHour, endMinute),
 		})
 	}

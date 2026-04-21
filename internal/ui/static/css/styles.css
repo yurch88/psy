@@ -1455,14 +1455,14 @@ svg {
 .admin-date-picker,
 .admin-selected-slots {
   display: grid;
-  gap: 16px;
+  gap: 18px;
   min-width: 0;
 }
 
 .admin-date-builder-grid {
   display: grid;
-  grid-template-columns: minmax(220px, 250px) minmax(0, 1fr);
-  gap: 18px;
+  grid-template-columns: 1fr;
+  gap: 16px;
   align-items: start;
 }
 
@@ -1474,23 +1474,19 @@ svg {
 
 .admin-date-panel {
   display: grid;
-  gap: 16px;
+  gap: 18px;
   min-width: 0;
-  padding: 18px 20px;
+  padding: 20px 22px;
   border: 1px solid rgba(20, 32, 51, 0.08);
-  border-radius: 26px;
+  border-radius: 28px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(247, 248, 251, 0.94) 100%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
   overflow: hidden;
 }
 
-.admin-date-panel-date {
-  align-content: start;
-}
-
 .admin-date-field {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .admin-date-field-hint {
@@ -1500,20 +1496,158 @@ svg {
   line-height: 1.6;
 }
 
-.admin-date-picker__header,
-.admin-selected-slots__header,
-.admin-date-actions {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
-  flex-wrap: wrap;
+.admin-date-control {
+  position: relative;
 }
 
-.admin-date-picker__header > div:first-child,
-.admin-current-slot {
-  flex: 1 1 240px;
+.admin-date-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 60px;
+  padding: 0 18px;
+  border: 1px solid rgba(20, 32, 51, 0.12);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #182133;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+.admin-date-trigger:hover,
+.admin-date-trigger:focus-visible {
+  border-color: rgba(24, 33, 51, 0.2);
+  box-shadow: 0 0 0 4px rgba(24, 33, 51, 0.06);
+  outline: none;
+}
+
+.admin-date-trigger__value {
   min-width: 0;
+  color: #182133;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.admin-date-trigger__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(24, 33, 51, 0.06);
+  color: #182133;
+  font-size: 15px;
+  flex: 0 0 auto;
+}
+
+.admin-date-popover {
+  position: absolute;
+  top: calc(100% + 12px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(20, 32, 51, 0.1);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 22px 48px rgba(20, 32, 51, 0.14);
+}
+
+.admin-date-popover__header {
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-date-popover__title {
+  text-align: center;
+  color: #182133;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.admin-calendar-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(20, 32, 51, 0.12);
+  border-radius: 999px;
+  background: rgba(248, 249, 252, 0.94);
+  color: #182133;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.admin-date-weekdays,
+.admin-date-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.admin-date-weekdays span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  color: #7a8394;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.admin-date-grid__blank,
+.admin-date-day {
+  min-height: 42px;
+}
+
+.admin-date-day {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: #f5f6fa;
+  color: #182133;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.admin-date-day:hover {
+  border-color: rgba(20, 32, 51, 0.12);
+  background: #ffffff;
+  transform: translateY(-1px);
+}
+
+.admin-date-day.is-today {
+  border-color: rgba(24, 33, 51, 0.18);
+}
+
+.admin-date-day.is-selected {
+  border-color: rgba(67, 132, 86, 0.22);
+  background: rgba(211, 236, 217, 0.92);
+  color: #244c30;
+}
+
+.admin-date-picker__header,
+.admin-selected-slots__header,
+.admin-date-actions,
+.admin-slot-builder {
+  display: grid;
+  gap: 14px;
 }
 
 .admin-date-picker__text,
@@ -1524,33 +1658,58 @@ svg {
   line-height: 1.6;
 }
 
-.admin-carousel-controls {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+.admin-selected-slots__header .admin-field-title {
   flex: 0 0 auto;
 }
 
-.admin-carousel-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border: 1px solid rgba(20, 32, 51, 0.12);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.92);
-  color: #182133;
-  font-size: 22px;
-  line-height: 1;
-  cursor: pointer;
-  flex: 0 0 38px;
+.admin-select-field {
+  display: grid;
+  gap: 10px;
 }
 
-.admin-slot-carousel-shell,
+.admin-select-shell {
+  position: relative;
+}
+
+.admin-select-shell::after {
+  content: "▾";
+  position: absolute;
+  top: 50%;
+  right: 18px;
+  transform: translateY(-50%);
+  color: #7a8394;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.admin-select-shell select {
+  width: 100%;
+  min-height: 60px;
+  padding: 0 48px 0 18px;
+  border: 1px solid rgba(20, 32, 51, 0.12);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #182133;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.45;
+  appearance: none;
+}
+
+.admin-select-shell select:focus {
+  border-color: rgba(24, 33, 51, 0.2);
+  box-shadow: 0 0 0 4px rgba(24, 33, 51, 0.06);
+  outline: none;
+}
+
+.admin-select-shell select:disabled {
+  color: #8e97a8;
+  background: rgba(245, 246, 248, 0.96);
+}
+
 .admin-selected-slots__box {
   min-width: 0;
-  padding: 14px;
+  padding: 14px 14px 16px;
   border: 1px solid rgba(20, 32, 51, 0.08);
   border-radius: 24px;
   background: rgba(248, 249, 252, 0.96);
@@ -1558,71 +1717,14 @@ svg {
   overflow: hidden;
 }
 
-.admin-slot-carousel {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  width: 100%;
-  padding-bottom: 6px;
-  scroll-behavior: smooth;
-}
-
-.admin-slot-carousel::-webkit-scrollbar {
-  height: 8px;
-}
-
-.admin-slot-carousel::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: rgba(20, 32, 51, 0.14);
-}
-
-.admin-slot-pill,
-.admin-selected-slot-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  max-width: 100%;
-  min-height: 44px;
-  padding: 0 16px;
-  border: 1px solid rgba(20, 32, 51, 0.12);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.95);
-  color: #182133;
-  font-size: 14px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.admin-slot-pill {
-  cursor: pointer;
-  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
-}
-
-.admin-slot-pill:hover {
-  border-color: rgba(20, 32, 51, 0.2);
-  background: #ffffff;
-}
-
-.admin-slot-pill.is-active {
-  border-color: rgba(67, 132, 86, 0.22);
-  background: rgba(211, 236, 217, 0.92);
-  color: #244c30;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
-}
-
 .admin-date-actions {
-  justify-content: flex-start;
+  justify-items: start;
 }
 
 .admin-date-actions .admin-link-button,
 .admin-selected-slots__header .admin-link-button {
-  flex: 0 0 auto;
-  max-width: 100%;
-}
-
-.admin-selected-slots__header .admin-field-title {
-  flex: 1 1 240px;
+  width: 100%;
+  max-width: 240px;
 }
 
 .admin-link-button-strong {
@@ -1636,31 +1738,49 @@ svg {
 }
 
 .admin-selected-slots__list {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
+  display: grid;
   gap: 10px;
   min-height: 44px;
 }
 
+.admin-selected-slots__list-stack {
+  grid-template-columns: 1fr;
+}
+
 .admin-selected-slot-chip {
-  gap: 10px;
-  padding-right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(20, 32, 51, 0.1);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.98);
+}
+
+.admin-selected-slot-chip span {
+  min-width: 0;
+  color: #182133;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
 }
 
 .admin-selected-slot-chip button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border: 0;
   border-radius: 50%;
   background: rgba(24, 33, 51, 0.08);
   color: #182133;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1;
   cursor: pointer;
+  flex: 0 0 auto;
 }
 
 .admin-selected-slots__empty {
@@ -2178,9 +2298,6 @@ svg {
   .admin-toolbar,
   .admin-section-header,
   .admin-list-card,
-  .admin-date-picker__header,
-  .admin-selected-slots__header,
-  .admin-date-actions,
   .admin-booking-card__header {
     flex-direction: column;
     align-items: flex-start;
@@ -2297,9 +2414,20 @@ svg {
     width: 100%;
   }
 
-  .admin-slot-carousel .admin-slot-pill,
+  .admin-date-panel,
+  .admin-selected-slots__box {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .admin-date-popover {
+    position: static;
+    margin-top: 12px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76);
+  }
+
   .admin-date-actions .admin-link-button,
   .admin-selected-slots__header .admin-link-button {
-    width: auto;
+    max-width: none;
   }
 }

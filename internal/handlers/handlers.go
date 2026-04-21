@@ -103,6 +103,7 @@ type AdminSlotOption struct {
 
 type AdminDateSlotOption struct {
 	Value string
+	End   string
 	Label string
 }
 

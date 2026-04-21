@@ -77,23 +77,182 @@
     return (start || '').trim();
   };
 
+  const parseAdminISODate = (value) => {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec((value || '').trim());
+    if (!match) {
+      return null;
+    }
+    return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  };
+
+  const formatAdminISODate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const adminDateLabelFormatter = new Intl.DateTimeFormat('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  const adminMonthLabelFormatter = new Intl.DateTimeFormat('ru-RU', {
+    month: 'long',
+    year: 'numeric',
+  });
+
+  const capitalize = (value) => {
+    if (!value) {
+      return value;
+    }
+    return value.charAt(0).toUpperCase() + value.slice(1);
+  };
+
+  const isSameCalendarDay = (left, right) => (
+    Boolean(left)
+    && Boolean(right)
+    && left.getFullYear() === right.getFullYear()
+    && left.getMonth() === right.getMonth()
+    && left.getDate() === right.getDate()
+  );
+
+  document.querySelectorAll('[data-admin-date-picker]').forEach((picker) => {
+    const hiddenInput = picker.querySelector('[data-admin-date-input]');
+    const trigger = picker.querySelector('[data-admin-date-trigger]');
+    const label = picker.querySelector('[data-admin-date-label]');
+    const popover = picker.querySelector('[data-admin-date-popover]');
+    const title = picker.querySelector('[data-admin-date-title]');
+    const grid = picker.querySelector('[data-admin-date-grid]');
+    const prevButton = picker.querySelector('[data-admin-date-prev]');
+    const nextButton = picker.querySelector('[data-admin-date-next]');
+
+    if (!hiddenInput || !trigger || !label || !popover || !title || !grid) {
+      return;
+    }
+
+    const today = new Date();
+    let selectedDate = parseAdminISODate(hiddenInput.value);
+    let visibleMonth = selectedDate
+      ? new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
+      : new Date(today.getFullYear(), today.getMonth(), 1);
+
+    const closePopover = () => {
+      popover.hidden = true;
+      trigger.setAttribute('aria-expanded', 'false');
+    };
+
+    const openPopover = () => {
+      popover.hidden = false;
+      trigger.setAttribute('aria-expanded', 'true');
+    };
+
+    const syncLabel = () => {
+      const emptyLabel = label.dataset.emptyLabel || 'Выберите дату';
+      label.textContent = selectedDate ? capitalize(adminDateLabelFormatter.format(selectedDate)) : emptyLabel;
+    };
+
+    const renderCalendar = () => {
+      title.textContent = capitalize(adminMonthLabelFormatter.format(visibleMonth));
+      grid.innerHTML = '';
+
+      const year = visibleMonth.getFullYear();
+      const month = visibleMonth.getMonth();
+      const firstDay = new Date(year, month, 1);
+      const firstWeekday = (firstDay.getDay() + 6) % 7;
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      for (let index = 0; index < firstWeekday; index += 1) {
+        const blank = document.createElement('span');
+        blank.className = 'admin-date-grid__blank';
+        grid.appendChild(blank);
+      }
+
+      for (let day = 1; day <= daysInMonth; day += 1) {
+        const currentDate = new Date(year, month, day);
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'admin-date-day';
+        button.textContent = String(day);
+
+        if (isSameCalendarDay(currentDate, today)) {
+          button.classList.add('is-today');
+        }
+        if (isSameCalendarDay(currentDate, selectedDate)) {
+          button.classList.add('is-selected');
+        }
+
+        button.addEventListener('click', () => {
+          selectedDate = currentDate;
+          hiddenInput.value = formatAdminISODate(currentDate);
+          visibleMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+          syncLabel();
+          renderCalendar();
+          closePopover();
+        });
+
+        grid.appendChild(button);
+      }
+    };
+
+    trigger.addEventListener('click', () => {
+      if (popover.hidden) {
+        openPopover();
+      } else {
+        closePopover();
+      }
+    });
+
+    prevButton?.addEventListener('click', () => {
+      visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() - 1, 1);
+      renderCalendar();
+    });
+
+    nextButton?.addEventListener('click', () => {
+      visibleMonth = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 1);
+      renderCalendar();
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!picker.contains(event.target)) {
+        closePopover();
+      }
+    });
+
+    picker.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        closePopover();
+      }
+    });
+
+    syncLabel();
+    renderCalendar();
+  });
+
   document.querySelectorAll('[data-admin-date-form]').forEach((form) => {
-    const carousel = form.querySelector('[data-date-slot-carousel]');
-    const optionButtons = Array.from(form.querySelectorAll('[data-date-slot-option]'));
+    const startSelect = form.querySelector('[data-date-slot-start]');
+    const endSelect = form.querySelector('[data-date-slot-end]');
     const selectedList = form.querySelector('[data-date-slot-selected]');
     const hiddenTimes = form.querySelector('[data-date-slot-times]');
     const currentSlot = form.querySelector('[data-date-slot-current]');
     const addButton = form.querySelector('[data-date-slot-add]');
     const clearButton = form.querySelector('[data-date-slot-clear]');
-    const prevButton = form.querySelector('[data-date-slot-prev]');
-    const nextButton = form.querySelector('[data-date-slot-next]');
 
-    if (!carousel || !selectedList || !hiddenTimes || !currentSlot || !addButton) {
+    if (!startSelect || !endSelect || !selectedList || !hiddenTimes || !currentSlot || !addButton) {
       return;
     }
 
-    const optionMap = new Map(optionButtons.map((button) => [button.dataset.dateSlotOption, button.dataset.dateSlotLabel]));
-    let activeSlot = '';
+    const optionMap = new Map(
+      Array.from(startSelect.options)
+        .filter((option) => option.value)
+        .map((option) => [option.value, {
+          value: option.value,
+          end: option.dataset.end || '',
+          label: option.dataset.label || option.value,
+        }]),
+    );
+
     let selectedSlots = hiddenTimes.value
       .split('\n')
       .map(normalizeAdminTime)
@@ -114,11 +273,12 @@
       }
 
       selectedSlots.forEach((value) => {
+        const option = optionMap.get(value);
         const chip = document.createElement('div');
         chip.className = 'admin-selected-slot-chip';
 
         const text = document.createElement('span');
-        text.textContent = optionMap.get(value) || value;
+        text.textContent = option?.label || value;
 
         const remove = document.createElement('button');
         remove.type = 'button';
@@ -134,48 +294,60 @@
       });
     };
 
-    const setActive = (value) => {
-      activeSlot = value;
-      optionButtons.forEach((button) => {
-        button.classList.toggle('is-active', button.dataset.dateSlotOption === value);
-      });
-      currentSlot.textContent = value
-        ? `Выбран диапазон: ${optionMap.get(value) || value}`
-        : 'Сначала выберите диапазон времени';
+    const resetEndSelect = (placeholder) => {
+      endSelect.innerHTML = '';
+      const option = document.createElement('option');
+      option.value = '';
+      option.textContent = placeholder;
+      endSelect.appendChild(option);
+      endSelect.value = '';
     };
 
-    optionButtons.forEach((button) => {
-      button.addEventListener('click', () => {
-        setActive(button.dataset.dateSlotOption || '');
-      });
-    });
-
-    addButton.addEventListener('click', () => {
-      if (!activeSlot) {
-        currentSlot.textContent = 'Сначала выберите диапазон времени';
+    const syncRangeControls = () => {
+      const selected = optionMap.get(startSelect.value);
+      if (!selected) {
+        resetEndSelect('Сначала выберите начало');
+        endSelect.disabled = true;
+        currentSlot.textContent = 'Сначала выберите начало и конец диапазона';
         return;
       }
-      if (!selectedSlots.includes(activeSlot)) {
-        selectedSlots = [...selectedSlots, activeSlot].sort();
-        renderSelected();
+
+      resetEndSelect(selected.end);
+      endSelect.disabled = false;
+      endSelect.value = selected.end;
+      currentSlot.textContent = `Выбран диапазон: ${selected.label}`;
+    };
+
+    startSelect.addEventListener('change', syncRangeControls);
+
+    addButton.addEventListener('click', () => {
+      const selected = optionMap.get(startSelect.value);
+      if (!selected || !endSelect.value || endSelect.value !== selected.end) {
+        currentSlot.textContent = 'Выберите корректный диапазон времени';
+        return;
       }
+
+      if (selectedSlots.includes(selected.value)) {
+        currentSlot.textContent = `Этот диапазон уже добавлен: ${selected.label}`;
+        return;
+      }
+
+      selectedSlots = [...selectedSlots, selected.value].sort();
+      renderSelected();
+      currentSlot.textContent = `Добавлено: ${selected.label}`;
+      startSelect.value = '';
+      syncRangeControls();
     });
 
     clearButton?.addEventListener('click', () => {
       selectedSlots = [];
       renderSelected();
-    });
-
-    prevButton?.addEventListener('click', () => {
-      carousel.scrollBy({ left: -320, behavior: 'smooth' });
-    });
-
-    nextButton?.addEventListener('click', () => {
-      carousel.scrollBy({ left: 320, behavior: 'smooth' });
+      startSelect.value = '';
+      syncRangeControls();
     });
 
     renderSelected();
-    setActive(selectedSlots[0] || '');
+    syncRangeControls();
   });
 
   document.querySelectorAll('[data-weekday-card]').forEach((card) => {
