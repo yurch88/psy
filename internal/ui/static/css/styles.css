@@ -927,6 +927,14 @@ svg {
   margin: 0 0 18px;
 }
 
+.booking-profile .about-grid {
+  align-items: center;
+}
+
+.booking-profile .t165__img {
+  max-width: 320px;
+}
+
 .booking-grid {
   align-items: start;
 }

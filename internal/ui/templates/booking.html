@@ -7,16 +7,10 @@
       </div>
       <div class="about-text-col">
         <div class="t165__textwrapper">
-          <div class="t050__uptitle t-uptitle t-uptitle_sm">Клиентская страница</div>
           <h1 class="t050__title t-title t-title_xxl">{{.Site.Booking.Title}}</h1>
           <p class="t-descr t-descr_md"><strong>{{.Site.Brand}}</strong></p>
           <p class="t-descr t-descr_md">{{.Site.Contact.Location}}</p>
           <p class="t-descr t-descr_md"><a href="tel:+79652605032">{{.Site.Contact.Phone}}</a></p>
-          {{range .Site.Booking.Description}}<p class="t-descr t-descr_md">{{.}}</p>{{end}}
-          <div class="t165__btn-container">
-            <a class="t-btn t-btnflex t-btnflex_type_button t-btnflex_md" href="#calendar"><span class="t-btnflex__text">ЗАПИСАТЬСЯ</span></a>
-            <a class="booking-telegram" href="{{.Site.Contact.TelegramURL}}" target="_blank" rel="noopener">{{template "iconTelegram" .}} Telegram</a>
-          </div>
         </div>
       </div>
     </div>
