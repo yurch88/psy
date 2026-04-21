@@ -44,6 +44,7 @@ type PageData struct {
 	AdminLogin         string
 	AdminError         string
 	AdminBookings      []AdminBookingView
+	HideSiteChrome     bool
 }
 
 type AdminBookingView struct {

@@ -11,24 +11,28 @@
 </head>
 <body class="t-body">
   <a class="skip-link" href="#content">К содержанию</a>
-  <header class="t454 site-header">
-    <a class="brand t-title" href="/" aria-label="На главную">{{.Site.Brand}}</a>
-    <nav class="main-nav" aria-label="Основное меню">
-      <a href="/#about">Обо мне</a>
-      <a class="mobile-pricing-link" href="/#pricing">Стоимость</a>
-      <a href="/#contacts">Контакты</a>
-      <a href="/rules">Правила</a>
-      <a href="/memo">Памятка</a>
-      <a href="/#faq">Вопросы и ответы</a>
-    </nav>
-    <a class="header-cta" href="{{.Site.Contact.CalendarURL}}">Записаться</a>
-  </header>
+  {{if not .HideSiteChrome}}
+    <header class="t454 site-header">
+      <a class="brand t-title" href="/" aria-label="На главную">{{.Site.Brand}}</a>
+      <nav class="main-nav" aria-label="Основное меню">
+        <a href="/#about">Обо мне</a>
+        <a class="mobile-pricing-link" href="/#pricing">Стоимость</a>
+        <a href="/#contacts">Контакты</a>
+        <a href="/rules">Правила</a>
+        <a href="/memo">Памятка</a>
+        <a href="/#faq">Вопросы и ответы</a>
+      </nav>
+      <a class="header-cta" href="{{.Site.Contact.CalendarURL}}">Записаться</a>
+    </header>
+  {{end}}
 
   <main id="content" class="t-records">
     {{template "content" .}}
   </main>
 
-  {{template "footer" .}}
+  {{if not .HideSiteChrome}}
+    {{template "footer" .}}
+  {{end}}
   <script src="/static/js/app.js" defer></script>
 </body>
 </html>

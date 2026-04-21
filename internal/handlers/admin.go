@@ -18,10 +18,11 @@ func (h *Handler) administrator(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := PageData{
-		Title:        "Администратор - " + h.site.Brand,
-		Description:  "Вход в административный раздел сайта.",
-		Site:         h.site,
-		AdminEnabled: h.adminConfigured(),
+		Title:          "Администратор - " + h.site.Brand,
+		Description:    "Вход в административный раздел сайта.",
+		Site:           h.site,
+		AdminEnabled:   h.adminConfigured(),
+		HideSiteChrome: true,
 	}
 
 	if !data.AdminEnabled {
@@ -55,10 +56,11 @@ func (h *Handler) administratorLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := PageData{
-		Title:        "Администратор - " + h.site.Brand,
-		Description:  "Вход в административный раздел сайта.",
-		Site:         h.site,
-		AdminEnabled: h.adminConfigured(),
+		Title:          "Администратор - " + h.site.Brand,
+		Description:    "Вход в административный раздел сайта.",
+		Site:           h.site,
+		AdminEnabled:   h.adminConfigured(),
+		HideSiteChrome: true,
 	}
 
 	if !data.AdminEnabled {

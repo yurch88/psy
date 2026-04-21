@@ -1,5 +1,5 @@
 {{define "content"}}
-<section class="r t-rec t-rec_pt_135 t-rec_pb_120 admin-record">
+<section class="r t-rec t-rec_pt_90 t-rec_pb_120 admin-record">
   <div class="t-container">
     <div class="admin-shell">
       {{if .AdminAuthenticated}}
@@ -52,9 +52,6 @@
         </div>
       {{else}}
         <div class="admin-card admin-login-card">
-          <h1 class="t-title t-title_xxl">Вход в админ-панель</h1>
-          <p class="t-descr t-descr_md admin-subtitle">Адрес: <strong>/administrator</strong></p>
-
           {{if .AdminError}}
             <div class="form-errors" role="alert">
               <p>{{.AdminError}}</p>
