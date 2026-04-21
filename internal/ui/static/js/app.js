@@ -118,6 +118,33 @@
     return value.charAt(0).toUpperCase() + value.slice(1);
   };
 
+  const announceAdminPopoverOpen = (target) => {
+    document.dispatchEvent(new CustomEvent('admin-popover-open', {
+      detail: { target },
+    }));
+  };
+
+  const isAdminPopoverOpen = (popover) => popover.classList.contains('is-open');
+
+  const openAdminPopover = (popover) => {
+    window.clearTimeout(popover.__adminHideTimer);
+    popover.hidden = false;
+    popover.setAttribute('aria-hidden', 'false');
+    void popover.offsetWidth;
+    popover.classList.add('is-open');
+  };
+
+  const closeAdminPopover = (popover) => {
+    popover.classList.remove('is-open');
+    popover.setAttribute('aria-hidden', 'true');
+    window.clearTimeout(popover.__adminHideTimer);
+    popover.__adminHideTimer = window.setTimeout(() => {
+      if (!popover.classList.contains('is-open')) {
+        popover.hidden = true;
+      }
+    }, 180);
+  };
+
   const isSameCalendarDay = (left, right) => (
     Boolean(left)
     && Boolean(right)
@@ -149,12 +176,13 @@
       : new Date(today.getFullYear(), today.getMonth(), 1);
 
     const closePopover = () => {
-      popover.hidden = true;
+      closeAdminPopover(popover);
       trigger.setAttribute('aria-expanded', 'false');
     };
 
     const openPopover = () => {
-      popover.hidden = false;
+      announceAdminPopoverOpen(picker);
+      openAdminPopover(popover);
       trigger.setAttribute('aria-expanded', 'true');
     };
 
@@ -206,7 +234,7 @@
     };
 
     trigger.addEventListener('click', () => {
-      if (popover.hidden) {
+      if (!isAdminPopoverOpen(popover)) {
         openPopover();
       } else {
         closePopover();
@@ -246,12 +274,19 @@
       }
     });
 
+    document.addEventListener('admin-popover-open', (event) => {
+      if (event.detail?.target !== picker) {
+        closePopover();
+      }
+    });
+
     picker.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
         closePopover();
       }
     });
 
+    popover.setAttribute('aria-hidden', 'true');
     syncLabel();
     renderCalendar();
   });
@@ -334,7 +369,7 @@
     };
 
     const closeTimePopover = () => {
-      timePopover.hidden = true;
+      closeAdminPopover(timePopover);
       Object.values(triggerButtons).forEach((button) => {
         button?.setAttribute('aria-expanded', 'false');
       });
@@ -421,7 +456,8 @@
       activeTimeField = field;
       draftTime = currentRange[field] || getValidTimes(field)[0] || '';
       renderTimePopover();
-      timePopover.hidden = false;
+      announceAdminPopoverOpen(timePicker);
+      openAdminPopover(timePopover);
       Object.entries(triggerButtons).forEach(([name, button]) => {
         button?.setAttribute('aria-expanded', name === field ? 'true' : 'false');
       });
@@ -461,7 +497,7 @@
     };
 
     triggerButtons.start?.addEventListener('click', () => {
-      if (!timePopover.hidden && activeTimeField === 'start') {
+      if (isAdminPopoverOpen(timePopover) && activeTimeField === 'start') {
         closeTimePopover();
         return;
       }
@@ -469,7 +505,7 @@
     });
 
     triggerButtons.end?.addEventListener('click', () => {
-      if (!timePopover.hidden && activeTimeField === 'end') {
+      if (isAdminPopoverOpen(timePopover) && activeTimeField === 'end') {
         closeTimePopover();
         return;
       }
@@ -545,12 +581,19 @@
       }
     });
 
+    document.addEventListener('admin-popover-open', (event) => {
+      if (event.detail?.target !== timePicker) {
+        closeTimePopover();
+      }
+    });
+
     timePicker.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
         closeTimePopover();
       }
     });
 
+    timePopover.setAttribute('aria-hidden', 'true');
     syncTimeTrigger('start');
     syncTimeTrigger('end');
     renderSelected();
