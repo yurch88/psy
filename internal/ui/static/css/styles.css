@@ -1292,6 +1292,7 @@ svg {
 .admin-grid {
   display: grid;
   gap: 24px;
+  align-items: start;
 }
 
 .admin-grid-2 {
