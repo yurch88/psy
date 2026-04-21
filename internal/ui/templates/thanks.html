@@ -7,9 +7,10 @@
         <h1 class="t050__title t-title t-title_xxl">Заявка принята</h1>
         {{if .Booking}}
           <p class="t220__text t-text t-text_md">Спасибо, {{.Booking.Name}}. Ваша заявка на слот {{.Booking.Start.Format "02.01.2006 15:04"}} по московскому времени отправлена на подтверждение.</p>
-          <p class="t220__text t-text t-text_md">Я свяжусь с Вами по указанным контактам, когда заявка будет подтверждена.</p>
+          <p class="t220__text t-text t-text_md">Обратите внимание, что выбранное время будет закреплено за вами только в случае предоплаты не позднее, чем за 24 часа. Подробнее прочесть об оплате можно в разделе <a href="/rules">ПРАВИЛА</a>.</p>
         {{else}}
-          <p class="t220__text t-text t-text_md">Заявка сохранена и отправлена на подтверждение. Я свяжусь с Вами.</p>
+          <p class="t220__text t-text t-text_md">Заявка сохранена и отправлена на подтверждение.</p>
+          <p class="t220__text t-text t-text_md">Обратите внимание, что выбранное время будет закреплено за вами только в случае предоплаты не позднее, чем за 24 часа. Подробнее прочесть об оплате можно в разделе <a href="/rules">ПРАВИЛА</a>.</p>
         {{end}}
         <div class="t-section__bottomwrapper t-align_center">
           <a class="t-btn t-btnflex t-btnflex_type_button t-btnflex_md" href="/"><span class="t-btnflex__text">НА ГЛАВНУЮ</span></a>
