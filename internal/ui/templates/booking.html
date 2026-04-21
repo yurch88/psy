@@ -21,7 +21,6 @@
 <section class="r t-rec t-rec_pt_105 t-rec_pb_120 t-grey" id="calendar">
   <div class="t-container booking-grid">
     <div class="booking-slots">
-      <div class="t050__uptitle t-uptitle t-uptitle_sm">Календарь клиента</div>
       <h2 class="t-title t-title_xs">Выберите дату и время</h2>
       <p class="timezone-line t-descr t-descr_md">Ваш часовой пояс: <strong data-timezone-label>определяется</strong></p>
       <div class="slot-grid" aria-label="Доступные временные промежутки">
@@ -45,7 +44,7 @@
     </div>
 
     <form class="booking-form" method="post" action="/booking/submit" data-booking-form>
-      <h2 class="t-title t-title_xs">Личные данные</h2>
+      <h2 class="t-title t-title_xs">Заполните личные данные</h2>
       {{if .Errors}}
         <div class="form-errors" role="alert">
           {{range .Errors}}<p>{{.}}</p>{{end}}
