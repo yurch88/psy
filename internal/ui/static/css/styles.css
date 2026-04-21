@@ -1349,27 +1349,51 @@ svg {
 }
 
 .admin-weekdays label {
+  position: relative;
   display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  padding: 0 14px;
-  border: 1px solid rgba(20, 32, 51, 0.12);
-  border-radius: 999px;
-  background: var(--white);
-  font-size: 14px;
-  font-weight: 400;
-  color: #182133;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .admin-weekdays label span {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid rgba(20, 32, 51, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  font-size: 14px;
+  font-weight: 400;
+  color: #182133;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .admin-weekdays input {
-  width: 16px;
-  height: 16px;
+  position: absolute;
+  width: 1px;
+  height: 1px;
   margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.admin-weekdays label:hover span {
+  border-color: rgba(20, 32, 51, 0.2);
+  background: #fcfcfb;
+}
+
+.admin-weekdays input:focus + span {
+  border-color: rgba(24, 33, 51, 0.2);
+  box-shadow: 0 0 0 4px rgba(24, 33, 51, 0.08);
+}
+
+.admin-weekdays input:checked + span {
+  border-color: rgba(24, 33, 51, 0.18);
+  background: rgba(24, 33, 51, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .admin-submit,
