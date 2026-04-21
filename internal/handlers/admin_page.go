@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -94,6 +95,7 @@ func (h *Handler) renderAdministratorPage(w http.ResponseWriter, r *http.Request
 	data.AdminAuthenticated = true
 	data.AdminWeeklySchedule = h.adminWeeklyScheduleViews()
 	data.AdminSlotRules = h.adminSlotRuleViews()
+	data.AdminDateSlotOptions = adminDateSlotOptions()
 	data.AdminBookings = h.adminBookingViews()
 	data.AdminAvailableSlots = h.adminAvailableSlotOptions()
 	data.AdminContentForm = h.adminContentForm()
@@ -254,6 +256,28 @@ func adminWeekdayName(day int) string {
 	default:
 		return "Воскресенье"
 	}
+}
+
+func adminDateSlotOptions() []AdminDateSlotOption {
+	options := make([]AdminDateSlotOption, 0, 160)
+	startMinutes := 9 * 60
+	lastStartMinutes := 21*60 + 35
+	durationMinutes := 55
+
+	for value := startMinutes; value <= lastStartMinutes; value += 5 {
+		startHour := value / 60
+		startMinute := value % 60
+		endValue := value + durationMinutes
+		endHour := endValue / 60
+		endMinute := endValue % 60
+
+		options = append(options, AdminDateSlotOption{
+			Value: fmt.Sprintf("%02d:%02d", startHour, startMinute),
+			Label: fmt.Sprintf("%02d:%02d-%02d:%02d", startHour, startMinute, endHour, endMinute),
+		})
+	}
+
+	return options
 }
 
 func (h *Handler) adminBookingViews() []AdminBookingView {

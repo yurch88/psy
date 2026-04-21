@@ -1429,6 +1429,149 @@ svg {
   color: #182133;
 }
 
+.admin-date-picker,
+.admin-selected-slots {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-date-builder-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.admin-date-picker__header,
+.admin-selected-slots__header,
+.admin-date-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.admin-date-picker__text,
+.admin-current-slot {
+  margin: 0;
+  color: #6a7588;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.admin-carousel-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-carousel-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(20, 32, 51, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #182133;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.admin-slot-carousel {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scroll-behavior: smooth;
+}
+
+.admin-slot-carousel::-webkit-scrollbar {
+  height: 8px;
+}
+
+.admin-slot-carousel::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(20, 32, 51, 0.14);
+}
+
+.admin-slot-pill,
+.admin-selected-slot-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid rgba(20, 32, 51, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #182133;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.admin-slot-pill {
+  cursor: pointer;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.admin-slot-pill:hover {
+  border-color: rgba(20, 32, 51, 0.2);
+  background: #ffffff;
+}
+
+.admin-slot-pill.is-active {
+  border-color: rgba(24, 33, 51, 0.18);
+  background: rgba(24, 33, 51, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.admin-link-button-strong {
+  min-width: 120px;
+  background: #182133;
+  color: #ffffff;
+}
+
+.admin-link-button-strong:hover {
+  background: #141b2a;
+}
+
+.admin-selected-slots__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-height: 44px;
+}
+
+.admin-selected-slot-chip {
+  gap: 10px;
+  padding-right: 10px;
+}
+
+.admin-selected-slot-chip button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(24, 33, 51, 0.08);
+  color: #182133;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.admin-selected-slots__empty {
+  color: #7a8394;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .admin-weekdays {
   display: flex;
   flex-wrap: wrap;
@@ -1934,6 +2077,9 @@ svg {
   .admin-toolbar,
   .admin-section-header,
   .admin-list-card,
+  .admin-date-picker__header,
+  .admin-selected-slots__header,
+  .admin-date-actions,
   .admin-booking-card__header {
     flex-direction: column;
     align-items: flex-start;
@@ -1944,6 +2090,10 @@ svg {
   }
 
   .admin-weekly-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-date-builder-grid {
     grid-template-columns: 1fr;
   }
 
@@ -2040,6 +2190,7 @@ svg {
   }
 
   .admin-weekdays label,
+  .admin-slot-pill,
   .admin-record .t-btn,
   .admin-link-button,
   .admin-danger-button {

@@ -204,6 +204,8 @@ func adminCalendarError(err error) string {
 		return "Добавьте хотя бы одно время слота."
 	case strings.Contains(err.Error(), "invalid date"):
 		return "Укажите корректную дату."
+	case strings.Contains(err.Error(), "invalid time"):
+		return "Выберите корректное время слота."
 	default:
 		return "Не удалось сохранить слоты."
 	}

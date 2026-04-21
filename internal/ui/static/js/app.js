@@ -67,4 +67,114 @@
       }
     });
   });
+
+  const normalizeAdminTime = (value) => {
+    const normalized = (value || '').trim();
+    if (!normalized) {
+      return '';
+    }
+    const [start] = normalized.split('-');
+    return (start || '').trim();
+  };
+
+  document.querySelectorAll('[data-admin-date-form]').forEach((form) => {
+    const carousel = form.querySelector('[data-date-slot-carousel]');
+    const optionButtons = Array.from(form.querySelectorAll('[data-date-slot-option]'));
+    const selectedList = form.querySelector('[data-date-slot-selected]');
+    const hiddenTimes = form.querySelector('[data-date-slot-times]');
+    const currentSlot = form.querySelector('[data-date-slot-current]');
+    const addButton = form.querySelector('[data-date-slot-add]');
+    const clearButton = form.querySelector('[data-date-slot-clear]');
+    const prevButton = form.querySelector('[data-date-slot-prev]');
+    const nextButton = form.querySelector('[data-date-slot-next]');
+
+    if (!carousel || !selectedList || !hiddenTimes || !currentSlot || !addButton) {
+      return;
+    }
+
+    const optionMap = new Map(optionButtons.map((button) => [button.dataset.dateSlotOption, button.dataset.dateSlotLabel]));
+    let activeSlot = '';
+    let selectedSlots = hiddenTimes.value
+      .split('\n')
+      .map(normalizeAdminTime)
+      .filter(Boolean)
+      .filter((value, index, array) => array.indexOf(value) === index)
+      .sort();
+
+    const renderSelected = () => {
+      hiddenTimes.value = selectedSlots.join('\n');
+      selectedList.innerHTML = '';
+
+      if (!selectedSlots.length) {
+        const empty = document.createElement('p');
+        empty.className = 'admin-selected-slots__empty';
+        empty.textContent = 'Пока ничего не добавлено.';
+        selectedList.appendChild(empty);
+        return;
+      }
+
+      selectedSlots.forEach((value) => {
+        const chip = document.createElement('div');
+        chip.className = 'admin-selected-slot-chip';
+
+        const text = document.createElement('span');
+        text.textContent = optionMap.get(value) || value;
+
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.setAttribute('aria-label', 'Удалить слот');
+        remove.textContent = '×';
+        remove.addEventListener('click', () => {
+          selectedSlots = selectedSlots.filter((slot) => slot !== value);
+          renderSelected();
+        });
+
+        chip.append(text, remove);
+        selectedList.appendChild(chip);
+      });
+    };
+
+    const setActive = (value) => {
+      activeSlot = value;
+      optionButtons.forEach((button) => {
+        button.classList.toggle('is-active', button.dataset.dateSlotOption === value);
+      });
+      currentSlot.textContent = value
+        ? `Выбран диапазон: ${optionMap.get(value) || value}`
+        : 'Сначала выберите диапазон времени';
+    };
+
+    optionButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        setActive(button.dataset.dateSlotOption || '');
+      });
+    });
+
+    addButton.addEventListener('click', () => {
+      if (!activeSlot) {
+        currentSlot.textContent = 'Сначала выберите диапазон времени';
+        return;
+      }
+      if (!selectedSlots.includes(activeSlot)) {
+        selectedSlots = [...selectedSlots, activeSlot].sort();
+        renderSelected();
+      }
+    });
+
+    clearButton?.addEventListener('click', () => {
+      selectedSlots = [];
+      renderSelected();
+    });
+
+    prevButton?.addEventListener('click', () => {
+      carousel.scrollBy({ left: -320, behavior: 'smooth' });
+    });
+
+    nextButton?.addEventListener('click', () => {
+      carousel.scrollBy({ left: 320, behavior: 'smooth' });
+    });
+
+    renderSelected();
+    setActive(selectedSlots[0] || '');
+  });
 })();

@@ -47,24 +47,25 @@ type PageData struct {
 	Errors      []string
 	Booking     *calendar.Booking
 
-	AdminEnabled        bool
-	AdminAuthenticated  bool
-	AdminTab            string
-	AdminContentSection string
-	AdminLogin          string
-	AdminError          string
-	AdminNotice         string
-	AdminNoticeClass    string
-	AdminBookings       []AdminBookingView
-	AdminWeeklySchedule []AdminWeekdayScheduleView
-	AdminSlotRules      []AdminSlotRuleView
-	AdminAvailableSlots []AdminSlotOption
-	AdminSlotMode       string
-	AdminSlotDate       string
-	AdminSlotTimes      string
-	AdminSlotWeekdays   []int
-	AdminContentForm    AdminContentForm
-	HideSiteChrome      bool
+	AdminEnabled         bool
+	AdminAuthenticated   bool
+	AdminTab             string
+	AdminContentSection  string
+	AdminLogin           string
+	AdminError           string
+	AdminNotice          string
+	AdminNoticeClass     string
+	AdminBookings        []AdminBookingView
+	AdminWeeklySchedule  []AdminWeekdayScheduleView
+	AdminSlotRules       []AdminSlotRuleView
+	AdminDateSlotOptions []AdminDateSlotOption
+	AdminAvailableSlots  []AdminSlotOption
+	AdminSlotMode        string
+	AdminSlotDate        string
+	AdminSlotTimes       string
+	AdminSlotWeekdays    []int
+	AdminContentForm     AdminContentForm
+	HideSiteChrome       bool
 }
 
 type AdminBookingView struct {
@@ -97,6 +98,11 @@ type AdminWeekdayScheduleView struct {
 
 type AdminSlotOption struct {
 	ID    string
+	Label string
+}
+
+type AdminDateSlotOption struct {
+	Value string
 	Label string
 }
 

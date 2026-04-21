@@ -87,22 +87,52 @@
                   <p class="admin-block__intro">Используйте этот блок для точечных изменений: разовый рабочий день, переносы, дополнительные окна или нестандартное расписание.</p>
                 </div>
 
-                <form class="admin-form" method="post" action="/administrator/slots/create">
+                <form class="admin-form" method="post" action="/administrator/slots/create" data-admin-date-form>
                   <input type="hidden" name="mode" value="date">
 
-                  <label>
-                    <span>Дата</span>
-                    <input name="date" type="date" value="{{if eq .AdminSlotMode "date"}}{{.AdminSlotDate}}{{end}}">
-                  </label>
+                  <div class="admin-date-builder-grid">
+                    <label>
+                      <span>Дата</span>
+                      <input name="date" type="date" value="{{if eq .AdminSlotMode "date"}}{{.AdminSlotDate}}{{end}}">
+                    </label>
 
-                  <label>
-                    <span>Время начала слотов</span>
-                    <textarea name="times" rows="7" placeholder="11:00&#10;14:15&#10;19:20">{{if eq .AdminSlotMode "date"}}{{.AdminSlotTimes}}{{end}}</textarea>
-                  </label>
+                    <div class="admin-date-picker">
+                      <div class="admin-date-picker__header">
+                        <div>
+                          <span class="admin-field-title">Диапазоны времени</span>
+                          <p class="admin-date-picker__text">Выберите нужный диапазон в ленте и нажмите «Добавить».</p>
+                        </div>
+                        <div class="admin-carousel-controls">
+                          <button class="admin-carousel-button" type="button" data-date-slot-prev aria-label="Прокрутить влево">‹</button>
+                          <button class="admin-carousel-button" type="button" data-date-slot-next aria-label="Прокрутить вправо">›</button>
+                        </div>
+                      </div>
+
+                      <div class="admin-slot-carousel" data-date-slot-carousel>
+                        {{range .AdminDateSlotOptions}}
+                          <button class="admin-slot-pill" type="button" data-date-slot-option="{{.Value}}" data-date-slot-label="{{.Label}}">{{.Label}}</button>
+                        {{end}}
+                      </div>
+
+                      <div class="admin-date-actions">
+                        <p class="admin-current-slot" data-date-slot-current>Сначала выберите диапазон времени</p>
+                        <button class="admin-link-button admin-link-button-strong" type="button" data-date-slot-add>Добавить</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="admin-selected-slots">
+                    <div class="admin-selected-slots__header">
+                      <span class="admin-field-title">Выбранные слоты на эту дату</span>
+                      <button class="admin-link-button" type="button" data-date-slot-clear>Очистить</button>
+                    </div>
+                    <div class="admin-selected-slots__list" data-date-slot-selected></div>
+                    <textarea name="times" hidden data-date-slot-times>{{if eq .AdminSlotMode "date"}}{{.AdminSlotTimes}}{{end}}</textarea>
+                  </div>
 
                   <div class="admin-format">
-                    <strong>Как заполнять</strong>
-                    <p>Каждое время указывайте с новой строки. Этот набор слотов будет действовать только на выбранную дату.</p>
+                    <strong>Как работает</strong>
+                    <p>Вы выбираете диапазоны времени готовыми карточками. Можно добавить сразу несколько слотов на одну дату, а затем сохранить всё одной кнопкой.</p>
                   </div>
 
                   <button class="t-btn t-btnflex t-btnflex_type_bbutton t-btnflex_md admin-submit" type="submit">
