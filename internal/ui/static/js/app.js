@@ -126,6 +126,16 @@
 
   const isAdminPopoverOpen = (popover) => popover.classList.contains('is-open');
 
+  const eventIncludesNode = (event, node) => {
+    if (!event || !node) {
+      return false;
+    }
+    if (typeof event.composedPath === 'function') {
+      return event.composedPath().includes(node);
+    }
+    return node.contains(event.target);
+  };
+
   const openAdminPopover = (popover) => {
     window.clearTimeout(popover.__adminHideTimer);
     popover.hidden = false;
@@ -269,7 +279,7 @@
     });
 
     document.addEventListener('click', (event) => {
-      if (!picker.contains(event.target)) {
+      if (!eventIncludesNode(event, picker)) {
         closePopover();
       }
     });
@@ -621,7 +631,7 @@
     });
 
     document.addEventListener('click', (event) => {
-      if (!timePicker.contains(event.target)) {
+      if (!eventIncludesNode(event, timePicker)) {
         closeTimePopover();
       }
     });
