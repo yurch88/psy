@@ -344,7 +344,6 @@
     };
     let activeTimeField = 'start';
     let draftTime = '';
-    let pendingAddedSlot = '';
 
     const syncCurrentSlot = (message = '') => {
       if (message) {
@@ -377,6 +376,22 @@
     };
 
     const getValidTimes = (field) => (field === 'end' ? validEndTimes : validStartTimes);
+
+    const resolveRangeFromTime = (field, value) => {
+      if (!value) {
+        return { start: '', end: '' };
+      }
+      if (field === 'start') {
+        return {
+          start: value,
+          end: startToEnd.get(value) || '',
+        };
+      }
+      return {
+        start: endToStart.get(value) || '',
+        end: value,
+      };
+    };
 
     const ensureDraftTime = () => {
       const validTimes = getValidTimes(activeTimeField);
@@ -447,29 +462,36 @@
         }
         button.addEventListener('click', () => {
           draftTime = `${selectedHour}:${minute}`;
-          applyDraftTime();
+          applyTimeValue(activeTimeField, draftTime);
         });
         minutesList.appendChild(button);
       });
     };
 
     const applyDraftTime = ({ closePopoverOnApply = true } = {}) => {
-      if (!draftTime) {
-        syncCurrentSlot('Р’С‹Р±РµСЂРёС‚Рµ РєРѕСЂСЂРµРєС‚РЅРѕРµ РІСЂРµРјСЏ');
+      return applyTimeValue(activeTimeField, draftTime, { closePopoverOnApply });
+    };
+
+    const applyTimeValue = (field, value, { closePopoverOnApply = true } = {}) => {
+      if (!value) {
+        syncCurrentSlot('Выберите корректное время');
         if (closePopoverOnApply) {
           closeTimePopover();
         }
         return false;
       }
 
-      if (activeTimeField === 'start') {
-        currentRange.start = draftTime;
-        currentRange.end = startToEnd.get(draftTime) || '';
-      } else {
-        currentRange.end = draftTime;
-        currentRange.start = endToStart.get(draftTime) || '';
+      const nextRange = resolveRangeFromTime(field, value);
+      if (!nextRange.start || !nextRange.end) {
+        syncCurrentSlot('Выберите корректное время');
+        if (closePopoverOnApply) {
+          closeTimePopover();
+        }
+        return false;
       }
 
+      currentRange = nextRange;
+      draftTime = value;
       syncTimeTrigger('start');
       syncTimeTrigger('end');
       syncCurrentSlot();
@@ -483,7 +505,11 @@
 
     const openTimePopover = (field) => {
       activeTimeField = field;
-      draftTime = currentRange[field] || getValidTimes(field)[0] || '';
+      if (field === 'start') {
+        draftTime = currentRange.start || validStartTimes[0] || '';
+      } else {
+        draftTime = currentRange.end || (currentRange.start ? (startToEnd.get(currentRange.start) || '') : '') || validEndTimes[0] || '';
+      }
       renderTimePopover();
       announceAdminPopoverOpen(timePicker);
       openAdminPopover(timePopover);
@@ -542,24 +568,7 @@
     });
 
     applyTimeButton?.addEventListener('click', () => {
-      if (!draftTime) {
-        syncCurrentSlot('Выберите корректное время');
-        closeTimePopover();
-        return;
-      }
-
-      if (activeTimeField === 'start') {
-        currentRange.start = draftTime;
-        currentRange.end = startToEnd.get(draftTime) || '';
-      } else {
-        currentRange.end = draftTime;
-        currentRange.start = endToStart.get(draftTime) || '';
-      }
-
-      syncTimeTrigger('start');
-      syncTimeTrigger('end');
-      syncCurrentSlot();
-      closeTimePopover();
+      applyDraftTime();
     });
 
     clearTimeButton?.addEventListener('click', () => {
@@ -573,18 +582,6 @@
 
     addButton.addEventListener('click', () => {
       const expectedEnd = currentRange.start ? startToEnd.get(currentRange.start) : '';
-      pendingAddedSlot = '';
-      if (!currentRange.start || !currentRange.end || currentRange.end !== expectedEnd) {
-        return;
-      }
-      if (selectedSlots.includes(currentRange.start)) {
-        return;
-      }
-      pendingAddedSlot = currentRange.start;
-    }, true);
-
-    addButton.addEventListener('click', () => {
-      const expectedEnd = currentRange.start ? startToEnd.get(currentRange.start) : '';
       if (!currentRange.start || !currentRange.end || currentRange.end !== expectedEnd) {
         syncCurrentSlot('Выберите корректный диапазон времени');
         return;
@@ -595,22 +592,15 @@
         return;
       }
 
+      const addedLabel = optionMap.get(currentRange.start) || `${currentRange.start}-${currentRange.end}`;
       selectedSlots = [...selectedSlots, currentRange.start].sort();
       renderSelected();
-      syncCurrentSlot(`Добавлено: ${optionMap.get(currentRange.start) || currentRange.start}`);
-    });
-
-    addButton.addEventListener('click', () => {
-      if (!pendingAddedSlot || !selectedSlots.includes(pendingAddedSlot)) {
-        pendingAddedSlot = '';
-        return;
-      }
       currentRange = { start: '', end: '' };
       draftTime = '';
       syncTimeTrigger('start');
       syncTimeTrigger('end');
       closeTimePopover();
-      pendingAddedSlot = '';
+      syncCurrentSlot(`Добавлено: ${addedLabel}`);
     });
 
     clearSlotsButton?.addEventListener('click', () => {
