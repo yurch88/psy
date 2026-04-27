@@ -257,6 +257,16 @@ func parseClock(value string) (int, error) {
 
 func normalizeClockValue(value string) (string, error) {
 	value = strings.TrimSpace(value)
+	if value != "" && !strings.ContainsAny(value, ":.,") {
+		hour, err := strconv.Atoi(value)
+		if err != nil {
+			return "", fmt.Errorf("invalid time %q", value)
+		}
+		if hour < 0 || hour > 23 {
+			return "", fmt.Errorf("invalid time %q", value)
+		}
+		return fmt.Sprintf("%02d:00", hour), nil
+	}
 	value = strings.ReplaceAll(value, ".", ":")
 	value = strings.ReplaceAll(value, ",", ":")
 

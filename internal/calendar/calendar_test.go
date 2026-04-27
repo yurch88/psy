@@ -367,6 +367,36 @@ func TestReplaceWeeklyScheduleAcceptsDotSeparatedTimes(t *testing.T) {
 	}
 }
 
+func TestReplaceWeeklyScheduleAcceptsWholeHoursWithoutSeparators(t *testing.T) {
+	location, err := time.LoadLocation("Europe/Moscow")
+	if err != nil {
+		t.Fatalf("load location: %v", err)
+	}
+
+	tempDir := t.TempDir()
+	service, err := NewService("Europe/Moscow", filepath.Join(tempDir, "bookings.jsonl"), filepath.Join(tempDir, "slot-rules.json"))
+	if err != nil {
+		t.Fatalf("new service: %v", err)
+	}
+
+	service.now = func() time.Time {
+		return time.Date(2026, time.April, 27, 8, 0, 0, 0, location)
+	}
+
+	err = service.ReplaceWeeklySchedule(context.Background(), []WeeklyScheduleDay{
+		{Day: 2, StartTimes: []string{"9", "10", "11", "12"}},
+	})
+	if err != nil {
+		t.Fatalf("replace weekly schedule: %v", err)
+	}
+
+	got := slotStartsForDate(service.AvailableSlots(), "2026-04-28")
+	want := []string{"09:00", "10:00", "11:00", "12:00"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("expected normalized tuesday slots %v, got %v", want, got)
+	}
+}
+
 func containsSlot(slots []Slot, target string) bool {
 	for _, slot := range slots {
 		if slot.ID == target {
