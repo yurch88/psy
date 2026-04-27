@@ -15,20 +15,24 @@ import (
 )
 
 const (
-	SlotRuleScopeWeekly  = "weekly"
-	SlotRuleScopeDate    = "date"
-	SlotRuleModeOverride = "override"
+	SlotRuleScopeWeekly = "weekly"
+	SlotRuleScopeDate   = "date"
 )
 
+type TimeRange struct {
+	Start string `json:"start"`
+	End   string `json:"end"`
+}
+
 type SlotRule struct {
-	ID              string    `json:"id"`
-	Scope           string    `json:"scope"`
-	Mode            string    `json:"mode,omitempty"`
-	Date            string    `json:"date,omitempty"`
-	Weekdays        []int     `json:"weekdays,omitempty"`
-	StartTimes      []string  `json:"start_times"`
-	DurationMinutes int       `json:"duration_minutes"`
-	CreatedAt       time.Time `json:"created_at"`
+	ID              string      `json:"id"`
+	Scope           string      `json:"scope"`
+	Date            string      `json:"date,omitempty"`
+	Weekdays        []int       `json:"weekdays,omitempty"`
+	StartTimes      []string    `json:"start_times,omitempty"`
+	TimeRanges      []TimeRange `json:"time_ranges,omitempty"`
+	DurationMinutes int         `json:"duration_minutes"`
+	CreatedAt       time.Time   `json:"created_at"`
 }
 
 type SlotRuleInput struct {
@@ -36,6 +40,7 @@ type SlotRuleInput struct {
 	Date            string
 	Weekdays        []int
 	StartTimes      []string
+	TimeRanges      []TimeRange
 	DurationMinutes int
 }
 
@@ -46,7 +51,7 @@ type WeeklyScheduleDay struct {
 
 type DateSchedule struct {
 	Date       string
-	StartTimes []string
+	TimeRanges []string
 }
 
 type RuleStore struct {
@@ -202,6 +207,22 @@ func normalizeSlotRuleInput(input SlotRuleInput) (SlotRuleInput, error) {
 		seenTimes[normalizedValue] = true
 		startTimes = append(startTimes, normalizedValue)
 	}
+
+	timeRanges := make([]TimeRange, 0, len(input.TimeRanges))
+	seenRanges := make(map[string]bool)
+	for _, current := range input.TimeRanges {
+		normalizedRange, err := normalizeTimeRange(current)
+		if err != nil {
+			return SlotRuleInput{}, err
+		}
+		key := normalizedRange.Start + "-" + normalizedRange.End
+		if seenRanges[key] {
+			continue
+		}
+		seenRanges[key] = true
+		timeRanges = append(timeRanges, normalizedRange)
+	}
+
 	switch input.Scope {
 	case SlotRuleScopeWeekly:
 		if len(startTimes) == 0 {
@@ -225,17 +246,33 @@ func normalizeSlotRuleInput(input SlotRuleInput) (SlotRuleInput, error) {
 		sort.Ints(normalizedWeekdays)
 		input.Weekdays = normalizedWeekdays
 		input.Date = ""
+		input.TimeRanges = nil
 	case SlotRuleScopeDate:
-		if len(startTimes) == 0 {
-			return SlotRuleInput{}, fmt.Errorf("empty start times")
-		}
-		sort.Strings(startTimes)
-		input.StartTimes = startTimes
 		if _, err := time.Parse("2006-01-02", strings.TrimSpace(input.Date)); err != nil {
 			return SlotRuleInput{}, fmt.Errorf("invalid date")
 		}
 		input.Date = strings.TrimSpace(input.Date)
 		input.Weekdays = nil
+		if len(timeRanges) > 0 {
+			sort.Slice(timeRanges, func(i, j int) bool {
+				if timeRanges[i].Start == timeRanges[j].Start {
+					return timeRanges[i].End < timeRanges[j].End
+				}
+				return timeRanges[i].Start < timeRanges[j].Start
+			})
+			if err := validateTimeRanges(timeRanges); err != nil {
+				return SlotRuleInput{}, err
+			}
+			input.TimeRanges = timeRanges
+			input.StartTimes = nil
+			break
+		}
+		if len(startTimes) == 0 {
+			return SlotRuleInput{}, fmt.Errorf("empty date ranges")
+		}
+		sort.Strings(startTimes)
+		input.StartTimes = startTimes
+		input.TimeRanges = nil
 	default:
 		return SlotRuleInput{}, fmt.Errorf("invalid scope")
 	}
@@ -310,6 +347,67 @@ func validateTimeWindow(start string, durationMinutes int) error {
 	}
 	if startMinutes+durationMinutes > dayEnd {
 		return fmt.Errorf("slot end must be no later than 22:30")
+	}
+	return nil
+}
+
+func normalizeTimeRange(current TimeRange) (TimeRange, error) {
+	start, err := normalizeClockValue(current.Start)
+	if err != nil {
+		return TimeRange{}, err
+	}
+	end, err := normalizeClockValue(current.End)
+	if err != nil {
+		return TimeRange{}, err
+	}
+	if err := validateTimeRange(start, end); err != nil {
+		return TimeRange{}, err
+	}
+	return TimeRange{Start: start, End: end}, nil
+}
+
+func validateTimeRanges(ranges []TimeRange) error {
+	for i, current := range ranges {
+		if err := validateTimeRange(current.Start, current.End); err != nil {
+			return err
+		}
+		if i == 0 {
+			continue
+		}
+		prevEnd, err := parseClock(ranges[i-1].End)
+		if err != nil {
+			return err
+		}
+		currentStart, err := parseClock(current.Start)
+		if err != nil {
+			return err
+		}
+		if currentStart < prevEnd {
+			return fmt.Errorf("overlapping time ranges")
+		}
+	}
+	return nil
+}
+
+func validateTimeRange(start, end string) error {
+	startMinutes, err := parseClock(start)
+	if err != nil {
+		return err
+	}
+	endMinutes, err := parseClock(end)
+	if err != nil {
+		return err
+	}
+	dayStart := 9 * 60
+	dayEnd := 22*60 + 30
+	if startMinutes < dayStart {
+		return fmt.Errorf("slot start must be no earlier than 09:00")
+	}
+	if endMinutes > dayEnd {
+		return fmt.Errorf("slot end must be no later than 22:30")
+	}
+	if endMinutes <= startMinutes {
+		return fmt.Errorf("range end must be later than start")
 	}
 	return nil
 }

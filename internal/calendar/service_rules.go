@@ -57,6 +57,7 @@ func (s *Service) AddRule(ctx context.Context, input SlotRuleInput) (SlotRule, e
 		Date:            normalized.Date,
 		Weekdays:        normalized.Weekdays,
 		StartTimes:      normalized.StartTimes,
+		TimeRanges:      normalized.TimeRanges,
 		DurationMinutes: normalized.DurationMinutes,
 		CreatedAt:       s.now().UTC(),
 	}
@@ -148,11 +149,16 @@ func (s *Service) ReplaceWeeklySchedule(ctx context.Context, days []WeeklySchedu
 	return s.rules.Save(ctx, filtered)
 }
 
-func (s *Service) ReplaceDateSchedule(ctx context.Context, date string, startTimes []string) error {
+func (s *Service) ReplaceDateSchedule(ctx context.Context, date string, values []string) error {
+	timeRanges, err := parseDateScheduleLines(values)
+	if err != nil {
+		return err
+	}
+
 	normalized, err := normalizeSlotRuleInput(SlotRuleInput{
 		Scope:           SlotRuleScopeDate,
 		Date:            date,
-		StartTimes:      startTimes,
+		TimeRanges:      timeRanges,
 		DurationMinutes: 55,
 	})
 	if err != nil {
@@ -175,9 +181,8 @@ func (s *Service) ReplaceDateSchedule(ctx context.Context, date string, startTim
 	filtered = append(filtered, SlotRule{
 		ID:              fmt.Sprintf("rule-%d-%d", s.now().UnixNano(), s.seq.Add(1)),
 		Scope:           SlotRuleScopeDate,
-		Mode:            SlotRuleModeOverride,
 		Date:            normalized.Date,
-		StartTimes:      normalized.StartTimes,
+		TimeRanges:      normalized.TimeRanges,
 		DurationMinutes: normalized.DurationMinutes,
 		CreatedAt:       s.now().UTC(),
 	})
@@ -223,7 +228,7 @@ func (s *Service) ScheduleForDate(date string) ([]string, error) {
 		return nil, err
 	}
 
-	return slotStartsFromWindows(effectiveSlotWindowsForDay(rulesForDay(rules, day), day, s.location, nil, false, time.Time{})), nil
+	return customDateScheduleLabels(rulesForDay(rules, day), day, s.location), nil
 }
 
 func (s *Service) DateSchedules() ([]DateSchedule, error) {
@@ -254,7 +259,7 @@ func (s *Service) DateSchedules() ([]DateSchedule, error) {
 		}
 		schedules = append(schedules, DateSchedule{
 			Date:       date,
-			StartTimes: slotStartsFromWindows(effectiveSlotWindowsForDay(rulesForDay(rules, day), day, s.location, nil, false, time.Time{})),
+			TimeRanges: customDateScheduleLabels(grouped[date], day, s.location),
 		})
 	}
 
@@ -350,11 +355,10 @@ func effectiveSlotWindowsForDay(rules []SlotRule, day time.Time, location *time.
 		}
 	}
 
-	windows := weeklySlotWindows(weeklyRules, day, location, reserved, enforceLeadTime, now)
-	if len(dateRules) == 0 {
-		return windows
+	if len(dateRules) > 0 {
+		return dateSlotWindows(dateRules, day, location, reserved, enforceLeadTime, now)
 	}
-	return applyDateRulesToWindows(windows, dateRules, day, location, reserved, enforceLeadTime, now)
+	return weeklySlotWindows(weeklyRules, day, location, reserved, enforceLeadTime, now)
 }
 
 func weeklySlotWindows(rules []SlotRule, day time.Time, location *time.Location, reserved map[string]bool, enforceLeadTime bool, now time.Time) []slotWindow {
@@ -376,14 +380,11 @@ func weeklySlotWindows(rules []SlotRule, day time.Time, location *time.Location,
 	return windows
 }
 
-func applyDateRulesToWindows(base []slotWindow, rules []SlotRule, day time.Time, location *time.Location, reserved map[string]bool, enforceLeadTime bool, now time.Time) []slotWindow {
-	windows := append([]slotWindow(nil), base...)
+func dateSlotWindows(rules []SlotRule, day time.Time, location *time.Location, reserved map[string]bool, enforceLeadTime bool, now time.Time) []slotWindow {
+	windows := make([]slotWindow, 0, len(rules))
 	for _, rule := range rules {
-		if rule.Mode == SlotRuleModeOverride {
-			windows = windows[:0]
-		}
-		for _, startTime := range rule.StartTimes {
-			window, ok := buildSlotWindow(day, startTime, rule.DurationMinutes, location, reserved, enforceLeadTime, now)
+		for _, current := range ruleTimeRanges(rule) {
+			window, ok := buildTimeRangeWindow(day, current, location, reserved, enforceLeadTime, now)
 			if !ok {
 				continue
 			}
@@ -400,6 +401,20 @@ func applyDateRulesToWindows(base []slotWindow, rules []SlotRule, day time.Time,
 
 	sortSlotWindows(windows)
 	return windows
+}
+
+func customDateScheduleLabels(rules []SlotRule, day time.Time, location *time.Location) []string {
+	dateRules := make([]SlotRule, 0, len(rules))
+	for _, rule := range rules {
+		if rule.Scope != SlotRuleScopeDate {
+			continue
+		}
+		dateRules = append(dateRules, rule)
+	}
+	if len(dateRules) == 0 {
+		return []string{}
+	}
+	return windowLabels(dateSlotWindows(dateRules, day, location, nil, false, time.Time{}))
 }
 
 func buildSlotWindow(day time.Time, startTime string, durationMinutes int, location *time.Location, reserved map[string]bool, enforceLeadTime bool, now time.Time) (slotWindow, bool) {
@@ -434,18 +449,96 @@ func buildSlotWindow(day time.Time, startTime string, durationMinutes int, locat
 	}, true
 }
 
-func slotStartsFromWindows(windows []slotWindow) []string {
-	startTimes := make([]string, 0, len(windows))
-	for _, window := range windows {
-		startTimes = append(startTimes, window.slot.Start.Format("15:04"))
+func buildTimeRangeWindow(day time.Time, current TimeRange, location *time.Location, reserved map[string]bool, enforceLeadTime bool, now time.Time) (slotWindow, bool) {
+	startMinutes, err := parseClock(current.Start)
+	if err != nil {
+		return slotWindow{}, false
 	}
-	return startTimes
+	endMinutes, err := parseClock(current.End)
+	if err != nil {
+		return slotWindow{}, false
+	}
+
+	start := time.Date(day.Year(), day.Month(), day.Day(), startMinutes/60, startMinutes%60, 0, 0, location)
+	end := time.Date(day.Year(), day.Month(), day.Day(), endMinutes/60, endMinutes%60, 0, 0, location)
+	if enforceLeadTime && start.Before(now.Add(time.Hour)) {
+		return slotWindow{}, false
+	}
+	if !end.After(start) {
+		return slotWindow{}, false
+	}
+
+	id := start.Format("20060102T1504")
+	disabled := false
+	if reserved != nil {
+		disabled = reserved[id]
+	}
+
+	return slotWindow{
+		slot: Slot{
+			ID:       id,
+			Start:    start,
+			End:      end,
+			Disabled: disabled,
+		},
+		end: end,
+	}, true
+}
+
+func windowLabels(windows []slotWindow) []string {
+	labels := make([]string, 0, len(windows))
+	for _, window := range windows {
+		labels = append(labels, window.slot.Start.Format("15:04")+"-"+window.slot.End.Format("15:04"))
+	}
+	return labels
 }
 
 func sortSlotWindows(windows []slotWindow) {
 	sort.Slice(windows, func(i, j int) bool {
 		return windows[i].slot.Start.Before(windows[j].slot.Start)
 	})
+}
+
+func ruleTimeRanges(rule SlotRule) []TimeRange {
+	if len(rule.TimeRanges) > 0 {
+		return append([]TimeRange(nil), rule.TimeRanges...)
+	}
+
+	ranges := make([]TimeRange, 0, len(rule.StartTimes))
+	for _, startTime := range rule.StartTimes {
+		startMinutes, err := parseClock(startTime)
+		if err != nil {
+			continue
+		}
+		endMinutes := startMinutes + rule.DurationMinutes
+		ranges = append(ranges, TimeRange{
+			Start: startTime,
+			End:   fmt.Sprintf("%02d:%02d", endMinutes/60, endMinutes%60),
+		})
+	}
+	return ranges
+}
+
+func parseDateScheduleLines(values []string) ([]TimeRange, error) {
+	ranges := make([]TimeRange, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		parts := strings.SplitN(value, "-", 2)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid time range")
+		}
+		ranges = append(ranges, TimeRange{
+			Start: strings.TrimSpace(parts[0]),
+			End:   strings.TrimSpace(parts[1]),
+		})
+	}
+	if len(ranges) == 0 {
+		return nil, fmt.Errorf("empty date ranges")
+	}
+	return ranges, nil
 }
 
 func timesOverlap(firstStart, firstEnd, secondStart, secondEnd time.Time) bool {

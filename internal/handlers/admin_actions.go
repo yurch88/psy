@@ -120,7 +120,7 @@ func (h *Handler) administratorSlotsDay(w http.ResponseWriter, r *http.Request) 
 	}
 
 	date := strings.TrimSpace(r.URL.Query().Get("date"))
-	times, err := h.calendar.ScheduleForDate(date)
+	ranges, err := h.calendar.ScheduleForDate(date)
 	if err != nil {
 		http.Error(w, "Укажите корректную дату.", http.StatusBadRequest)
 		return
@@ -128,11 +128,11 @@ func (h *Handler) administratorSlotsDay(w http.ResponseWriter, r *http.Request) 
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	if err := json.NewEncoder(w).Encode(struct {
-		Date  string   `json:"date"`
-		Times []string `json:"times"`
+		Date   string   `json:"date"`
+		Ranges []string `json:"ranges"`
 	}{
-		Date:  date,
-		Times: times,
+		Date:   date,
+		Ranges: ranges,
 	}); err != nil {
 		h.logger.Error("encode date schedule", "date", date, "error", err)
 	}
@@ -242,8 +242,16 @@ func adminCalendarError(err error) string {
 		return "Выберите хотя бы один день недели."
 	case strings.Contains(err.Error(), "empty start times"):
 		return "Добавьте хотя бы одно время слота."
+	case strings.Contains(err.Error(), "empty date ranges"):
+		return "Добавьте хотя бы один временной диапазон на дату."
 	case strings.Contains(err.Error(), "invalid date"):
 		return "Укажите корректную дату."
+	case strings.Contains(err.Error(), "invalid time range"):
+		return "Укажите корректный диапазон времени в формате 10:00-12:30."
+	case strings.Contains(err.Error(), "overlapping time ranges"):
+		return "Диапазоны на одной дате не должны пересекаться."
+	case strings.Contains(err.Error(), "range end must be later than start"):
+		return "Конец диапазона должен быть позже начала."
 	case strings.Contains(err.Error(), "invalid time"):
 		return "Выберите корректное время слота."
 	default:

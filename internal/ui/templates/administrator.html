@@ -33,7 +33,7 @@
               <div>
                 <p class="admin-eyebrow">Администрирование календаря</p>
                 <h1 class="t-title t-title_xxl">Слоты для записи</h1>
-                <p class="t-descr t-descr_md admin-subtitle">Настраивайте повторяющийся график по дням недели и отдельные слоты на конкретные даты. Все слоты автоматически остаются в рабочем диапазоне с 09:00 до 22:30 и длятся 55 минут.</p>
+                <p class="t-descr t-descr_md admin-subtitle">Настраивайте повторяющийся график по дням недели и отдельные кастомные дни. Автоматическое расписание живёт само по себе, а кастомная дата действует только на выбранный день и полностью заменяет его обычные слоты.</p>
               </div>
               <div class="admin-pill-note">График работы: 09:00–22:30</div>
             </div>
@@ -43,7 +43,7 @@
                 <div class="admin-block__header">
                   <p class="admin-block__eyebrow">Основное расписание</p>
                   <h2 class="t-heading t-heading_md">Неделя по дням</h2>
-                  <p class="admin-block__intro">Теперь неделя настраивается как обычное расписание: день можно включить или выключить, а внутри него указать свои интервалы времени.</p>
+                  <p class="admin-block__intro">Здесь задаётся базовое расписание на все будущие недели: включайте нужные дни и указывайте времена начала стандартных слотов.</p>
                 </div>
 
                 <form class="admin-form" method="post" action="/administrator/slots/weekly">
@@ -94,7 +94,7 @@
                     <section class="admin-oneoff-section">
                       <div class="admin-oneoff-section__head">
                         <span class="admin-field-title">Дата</span>
-                        <p class="admin-oneoff-section__text">Выберите день в календаре: после выбора сюда подгрузятся текущие слоты этого дня. Их можно удалить, добавить свои и сохранить только для этой даты.</p>
+                        <p class="admin-oneoff-section__text">Выберите день в календаре. Если на эту дату уже сохранено отдельное расписание, оно подгрузится сюда. Если нет, форма будет пустой и вы сможете задать интервалы с нуля.</p>
                       </div>
 
                       <div class="admin-date-control" data-admin-date-picker>
@@ -134,49 +134,20 @@
                     <section class="admin-oneoff-section">
                       <div class="admin-oneoff-section__head">
                         <span class="admin-field-title">Диапазон времени</span>
-                        <p class="admin-oneoff-section__text">Выберите начало и конец слота в аккуратном popover-выборе времени, затем нажмите «Добавить».</p>
+                        <p class="admin-oneoff-section__text">Укажите любое время начала и конца в рамках рабочего дня, затем нажмите «Добавить».</p>
                       </div>
 
                       <div class="admin-time-picker" data-admin-time-picker>
                         <div class="admin-time-range">
-                          <button class="admin-chooser-trigger admin-time-trigger" type="button" data-admin-time-trigger="start" aria-haspopup="dialog" aria-expanded="false">
-                            <span class="admin-time-trigger__meta">Начало</span>
-                            <span class="admin-time-trigger__value" data-admin-time-value="start" data-empty-label="Выберите время">Выберите время</span>
-                            <span class="admin-chooser-trigger__icon" aria-hidden="true">◷</span>
-                          </button>
+                          <label>
+                            <span>Начало</span>
+                            <input type="time" min="09:00" max="22:29" step="60" data-admin-range-start>
+                          </label>
 
-                          <button class="admin-chooser-trigger admin-time-trigger" type="button" data-admin-time-trigger="end" aria-haspopup="dialog" aria-expanded="false">
-                            <span class="admin-time-trigger__meta">Конец</span>
-                            <span class="admin-time-trigger__value" data-admin-time-value="end" data-empty-label="Выберите время">Выберите время</span>
-                            <span class="admin-chooser-trigger__icon" aria-hidden="true">◷</span>
-                          </button>
-                        </div>
-
-                        <div class="admin-time-popover" hidden data-admin-time-popover>
-                          <div class="admin-time-popover__title" data-admin-time-title>Выберите время</div>
-
-                          <div class="admin-time-popover__body">
-                            <div class="admin-time-wheel">
-                              <div class="admin-time-wheel__label">Часы</div>
-                              <div class="admin-time-wheel__list" data-admin-time-hours></div>
-                            </div>
-
-                            <div class="admin-time-wheel">
-                              <div class="admin-time-wheel__label">Минуты</div>
-                              <div class="admin-time-wheel__list" data-admin-time-minutes></div>
-                            </div>
-                          </div>
-
-                          <div class="admin-popover-actions">
-                            <button class="admin-soft-button" type="button" data-admin-time-clear>Очистить</button>
-                            <button class="admin-soft-button admin-soft-button-strong" type="button" data-admin-time-apply>OK</button>
-                          </div>
-                        </div>
-
-                        <div hidden data-date-slot-source>
-                          {{range .AdminDateSlotOptions}}
-                            <span data-slot-value="{{.Value}}" data-slot-end="{{.End}}" data-slot-label="{{.Label}}"></span>
-                          {{end}}
+                          <label>
+                            <span>Конец</span>
+                            <input type="time" min="09:01" max="22:30" step="60" data-admin-range-end>
+                          </label>
                         </div>
                       </div>
 
@@ -188,7 +159,7 @@
 
                     <section class="admin-oneoff-section admin-selected-slots">
                       <div class="admin-selected-slots__header">
-                      <span class="admin-field-title">Выбранные слоты на эту дату</span>
+                      <span class="admin-field-title">Выбранные интервалы на эту дату</span>
                       <button class="admin-link-button" type="button" data-date-slot-clear>Очистить</button>
                       </div>
                       <div class="admin-selected-slots__box">
@@ -200,7 +171,7 @@
 
                   <div class="admin-format">
                     <strong>Как работает</strong>
-                    <p>Неделя остаётся базовым расписанием. На дату подгружается текущий набор слотов этого дня: можно убрать один стандартный слот, добавить свой и сохранить итог только для выбранной даты. Если новый слот пересекается с уже существующим, на этой дате сохраняется ваш новый вариант.</p>
+                    <p>Неделя и кастомные даты не смешиваются. Если сохранить интервалы на конкретную дату, в клиентском календаре на этом дне будут показаны только они. Если удалить кастомную дату, день снова начнёт жить по недельному расписанию.</p>
                   </div>
 
                   <button class="t-btn t-btnflex t-btnflex_type_bbutton t-btnflex_md admin-submit" type="submit">
@@ -213,7 +184,7 @@
                 <div class="admin-block__header">
                   <p class="admin-block__eyebrow">Разовые даты</p>
                   <h2 class="t-heading t-heading_md">Что добавлено отдельно от недели</h2>
-                  <p class="admin-block__intro">Здесь отображаются только точечные правила на конкретные даты. Их можно удалять отдельно, не затрагивая основное недельное расписание.</p>
+                  <p class="admin-block__intro">Здесь отображаются только отдельные расписания на конкретные даты. Их можно удалять отдельно, не затрагивая основное недельное расписание.</p>
                 </div>
 
                 {{if .AdminSlotRules}}
@@ -223,7 +194,7 @@
                         <div class="admin-list-card__content">
                           <span class="admin-badge">{{.ScopeLabel}}</span>
                           <p class="admin-list-card__title">{{.PatternLabel}}</p>
-                          <p class="admin-list-card__text">Время начала: {{.TimesLabel}}</p>
+                          <p class="admin-list-card__text">Интервалы: {{.TimesLabel}}</p>
                         </div>
                         <form method="post" action="/administrator/slots/delete">
                           <input type="hidden" name="date" value="{{.Date}}">

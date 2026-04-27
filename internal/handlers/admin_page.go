@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -95,7 +94,6 @@ func (h *Handler) renderAdministratorPage(w http.ResponseWriter, r *http.Request
 	data.AdminAuthenticated = true
 	data.AdminWeeklySchedule = h.adminWeeklyScheduleViews()
 	data.AdminSlotRules = h.adminSlotRuleViews()
-	data.AdminDateSlotOptions = adminDateSlotOptions()
 	data.AdminBookings = h.adminBookingViews()
 	data.AdminAvailableSlots = h.adminAvailableSlotOptions()
 	data.AdminContentForm = h.adminContentForm()
@@ -171,12 +169,12 @@ func (h *Handler) adminSlotRuleViews() []AdminSlotRuleView {
 	for _, schedule := range schedules {
 		view := AdminSlotRuleView{
 			Date:       schedule.Date,
-			TimesLabel: strings.Join(schedule.StartTimes, ", "),
+			TimesLabel: strings.Join(schedule.TimeRanges, ", "),
 		}
 		view.ScopeLabel = "Только на дату"
 		view.PatternLabel = schedule.Date
 		if view.TimesLabel == "" {
-			view.TimesLabel = "Слоты не выбраны"
+			view.TimesLabel = "Интервалы не выбраны"
 		}
 		views = append(views, view)
 	}
@@ -256,29 +254,6 @@ func adminWeekdayName(day int) string {
 	default:
 		return "Воскресенье"
 	}
-}
-
-func adminDateSlotOptions() []AdminDateSlotOption {
-	options := make([]AdminDateSlotOption, 0, 160)
-	startMinutes := 9 * 60
-	lastStartMinutes := 21*60 + 35
-	durationMinutes := 55
-
-	for value := startMinutes; value <= lastStartMinutes; value += 25 {
-		startHour := value / 60
-		startMinute := value % 60
-		endValue := value + durationMinutes
-		endHour := endValue / 60
-		endMinute := endValue % 60
-
-		options = append(options, AdminDateSlotOption{
-			Value: fmt.Sprintf("%02d:%02d", startHour, startMinute),
-			End:   fmt.Sprintf("%02d:%02d", endHour, endMinute),
-			Label: fmt.Sprintf("%02d:%02d-%02d:%02d", startHour, startMinute, endHour, endMinute),
-		})
-	}
-
-	return options
 }
 
 func (h *Handler) adminBookingViews() []AdminBookingView {

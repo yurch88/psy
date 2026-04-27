@@ -202,12 +202,12 @@ func TestReplaceDateScheduleOverridesOnlySelectedDay(t *testing.T) {
 	}
 
 	targetDate := "2026-04-28"
-	if err := service.ReplaceDateSchedule(context.Background(), targetDate, []string{"09:00", "10:15", "12:00"}); err != nil {
+	if err := service.ReplaceDateSchedule(context.Background(), targetDate, []string{"10:00-12:30", "13:00-13:55"}); err != nil {
 		t.Fatalf("replace date schedule: %v", err)
 	}
 
-	got := slotStartsForDate(service.AvailableSlots(), targetDate)
-	want := []string{"09:00", "10:15", "12:00"}
+	got := slotRangesForDate(service.AvailableSlots(), targetDate)
+	want := []string{"10:00-12:30", "13:00-13:55"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("expected slots %v on %s, got %v", want, targetDate, got)
 	}
@@ -219,7 +219,7 @@ func TestReplaceDateScheduleOverridesOnlySelectedDay(t *testing.T) {
 	}
 }
 
-func TestDateRuleRequiresAtLeastOneStartTime(t *testing.T) {
+func TestDateRuleRequiresAtLeastOneRange(t *testing.T) {
 	tempDir := t.TempDir()
 	service, err := NewService("Europe/Moscow", filepath.Join(tempDir, "bookings.jsonl"), filepath.Join(tempDir, "slot-rules.json"))
 	if err != nil {
@@ -232,11 +232,57 @@ func TestDateRuleRequiresAtLeastOneStartTime(t *testing.T) {
 		StartTimes:      nil,
 		DurationMinutes: 55,
 	}); err == nil {
-		t.Fatal("expected date rule without start times to fail")
+		t.Fatal("expected date rule without ranges to fail")
 	}
 }
 
-func TestLegacyDateRulesForSameDayResolveToLatestNonOverlappingSchedule(t *testing.T) {
+func TestScheduleForDateReturnsOnlyCustomDateRanges(t *testing.T) {
+	location, err := time.LoadLocation("Europe/Moscow")
+	if err != nil {
+		t.Fatalf("load location: %v", err)
+	}
+
+	tempDir := t.TempDir()
+	service, err := NewService("Europe/Moscow", filepath.Join(tempDir, "bookings.jsonl"), filepath.Join(tempDir, "slot-rules.json"))
+	if err != nil {
+		t.Fatalf("new service: %v", err)
+	}
+
+	service.now = func() time.Time {
+		return time.Date(2026, time.April, 27, 8, 0, 0, 0, location)
+	}
+
+	if err := service.ReplaceWeeklySchedule(context.Background(), []WeeklyScheduleDay{
+		{Day: 2, StartTimes: []string{"09:00", "10:00", "11:00", "12:00"}},
+	}); err != nil {
+		t.Fatalf("replace weekly schedule: %v", err)
+	}
+
+	targetDate := "2026-04-28"
+	got, err := service.ScheduleForDate(targetDate)
+	if err != nil {
+		t.Fatalf("schedule for empty custom date: %v", err)
+	}
+	if len(got) != 0 {
+		t.Fatalf("expected no custom ranges on %s, got %v", targetDate, got)
+	}
+
+	if err := service.ReplaceDateSchedule(context.Background(), targetDate, []string{"10:00-12:30", "13:00-13:55"}); err != nil {
+		t.Fatalf("replace date schedule: %v", err)
+	}
+
+	got, err = service.ScheduleForDate(targetDate)
+	if err != nil {
+		t.Fatalf("schedule for date: %v", err)
+	}
+
+	want := []string{"10:00-12:30", "13:00-13:55"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("expected custom date schedule %v, got %v", want, got)
+	}
+}
+
+func TestLegacyDateStartTimesStillOverrideWeeklyForSelectedDate(t *testing.T) {
 	location, err := time.LoadLocation("Europe/Moscow")
 	if err != nil {
 		t.Fatalf("load location: %v", err)
@@ -262,10 +308,10 @@ func TestLegacyDateRulesForSameDayResolveToLatestNonOverlappingSchedule(t *testi
 	if _, err := service.AddRule(context.Background(), SlotRuleInput{
 		Scope:           SlotRuleScopeDate,
 		Date:            targetDate,
-		StartTimes:      []string{"10:15"},
+		StartTimes:      []string{"10:15", "13:00"},
 		DurationMinutes: 55,
 	}); err != nil {
-		t.Fatalf("add custom date rule: %v", err)
+		t.Fatalf("add legacy custom date rule: %v", err)
 	}
 
 	got, err := service.ScheduleForDate(targetDate)
@@ -273,12 +319,12 @@ func TestLegacyDateRulesForSameDayResolveToLatestNonOverlappingSchedule(t *testi
 		t.Fatalf("schedule for date: %v", err)
 	}
 
-	want := []string{"09:00", "10:15", "12:00"}
+	want := []string{"10:15-11:10", "13:00-13:55"}
 	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("expected merged date schedule %v, got %v", want, got)
+		t.Fatalf("expected legacy custom date schedule %v, got %v", want, got)
 	}
 
-	got = slotStartsForDate(service.AvailableSlots(), targetDate)
+	got = slotRangesForDate(service.AvailableSlots(), targetDate)
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("expected visible slots %v on %s, got %v", want, targetDate, got)
 	}
@@ -497,6 +543,16 @@ func slotStartsForDate(slots []Slot, targetDate string) []string {
 		}
 	}
 	return starts
+}
+
+func slotRangesForDate(slots []Slot, targetDate string) []string {
+	ranges := make([]string, 0)
+	for _, slot := range slots {
+		if slot.Start.Format("2006-01-02") == targetDate {
+			ranges = append(ranges, slot.Start.Format("15:04")+"-"+slot.End.Format("15:04"))
+		}
+	}
+	return ranges
 }
 
 func findSlot(slots []Slot, target string) (Slot, bool) {
