@@ -167,7 +167,7 @@ func (s *Service) DeleteRule(ctx context.Context, id string) error {
 func (s *Service) generatedSlots(reserved map[string]bool) []Slot {
 	now := s.now().In(s.location)
 	startDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, s.location)
-	endDay := startDay.AddDate(0, 0, 90)
+	endDay := oneMonthAheadExclusive(startDay)
 
 	rules, err := s.rules.List()
 	if err != nil {
@@ -178,10 +178,7 @@ func (s *Service) generatedSlots(reserved map[string]bool) []Slot {
 	seen := make(map[string]bool)
 
 	for day := startDay; day.Before(endDay); day = day.AddDate(0, 0, 1) {
-		for _, rule := range rules {
-			if !ruleAppliesToDate(rule, day) {
-				continue
-			}
+		for _, rule := range rulesForDay(rules, day) {
 			for _, startTime := range rule.StartTimes {
 				startMinutes, err := parseClock(startTime)
 				if err != nil {
@@ -190,7 +187,7 @@ func (s *Service) generatedSlots(reserved map[string]bool) []Slot {
 
 				start := time.Date(day.Year(), day.Month(), day.Day(), startMinutes/60, startMinutes%60, 0, 0, s.location)
 				end := start.Add(time.Duration(rule.DurationMinutes) * time.Minute)
-				if !start.After(now.Add(2 * time.Hour)) {
+				if start.Before(now.Add(time.Hour)) {
 					continue
 				}
 				if !end.After(start) {
@@ -217,6 +214,42 @@ func (s *Service) generatedSlots(reserved map[string]bool) []Slot {
 	})
 
 	return slots
+}
+
+func oneMonthAheadExclusive(startDay time.Time) time.Time {
+	year, month, _ := startDay.Date()
+	location := startDay.Location()
+	lastDayOfNextMonth := time.Date(year, month+2, 0, 0, 0, 0, 0, location).Day()
+	targetDay := startDay.Day()
+	if targetDay > lastDayOfNextMonth {
+		targetDay = lastDayOfNextMonth
+	}
+
+	lastVisibleDay := time.Date(year, month+1, targetDay, 0, 0, 0, 0, location)
+	return lastVisibleDay.AddDate(0, 0, 1)
+}
+
+func rulesForDay(rules []SlotRule, day time.Time) []SlotRule {
+	hasDateOverride := false
+	for _, rule := range rules {
+		if rule.Scope == SlotRuleScopeDate && ruleAppliesToDate(rule, day) {
+			hasDateOverride = true
+			break
+		}
+	}
+
+	applicable := make([]SlotRule, 0, len(rules))
+	for _, rule := range rules {
+		if !ruleAppliesToDate(rule, day) {
+			continue
+		}
+		if hasDateOverride && rule.Scope != SlotRuleScopeDate {
+			continue
+		}
+		applicable = append(applicable, rule)
+	}
+
+	return applicable
 }
 
 func ruleAppliesToDate(rule SlotRule, day time.Time) bool {

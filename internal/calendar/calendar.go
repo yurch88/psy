@@ -242,6 +242,11 @@ type Store struct {
 	mu   sync.Mutex
 }
 
+type bookingState struct {
+	bookings     []Booking
+	invalidLines [][]byte
+}
+
 func NewStore(path string) *Store {
 	return &Store{path: path}
 }
@@ -284,12 +289,12 @@ func (s *Store) ReservedSlotIDsExcept(excludeBookingID string) map[string]bool {
 	defer s.mu.Unlock()
 
 	booked := make(map[string]bool)
-	bookings, err := s.loadLocked()
+	state, err := s.loadStateLocked()
 	if err != nil {
 		return booked
 	}
 
-	for _, booking := range bookings {
+	for _, booking := range state.bookings {
 		if booking.ID == excludeBookingID || booking.SlotID == "" {
 			continue
 		}
@@ -312,21 +317,21 @@ func (s *Store) AddNotifications(ctx context.Context, bookingID string, refs []N
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	bookings, err := s.loadLocked()
+	state, err := s.loadStateLocked()
 	if err != nil {
 		return Booking{}, err
 	}
 
-	for i := range bookings {
-		if bookings[i].ID != bookingID {
+	for i := range state.bookings {
+		if state.bookings[i].ID != bookingID {
 			continue
 		}
 
-		bookings[i].Notifications = mergeNotifications(bookings[i].Notifications, refs)
-		if err := s.saveLocked(ctx, bookings); err != nil {
+		state.bookings[i].Notifications = mergeNotifications(state.bookings[i].Notifications, refs)
+		if err := s.saveStateLocked(ctx, state); err != nil {
 			return Booking{}, err
 		}
-		return bookings[i], nil
+		return state.bookings[i], nil
 	}
 
 	return Booking{}, ErrBookingNotFound
@@ -342,10 +347,11 @@ func (s *Store) Review(ctx context.Context, bookingID string, action ReviewActio
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	bookings, err := s.loadLocked()
+	state, err := s.loadStateLocked()
 	if err != nil {
 		return ReviewResult{}, err
 	}
+	bookings := state.bookings
 
 	index := -1
 	for i := range bookings {
@@ -376,7 +382,7 @@ func (s *Store) Review(ctx context.Context, bookingID string, action ReviewActio
 			target.Status = BookingStatusRejected
 			target.ReviewedAt = timePtr(now)
 			target.Resolution = ResolutionSlotTaken
-			if err := s.saveLocked(ctx, bookings); err != nil {
+			if err := s.saveStateLocked(ctx, state); err != nil {
 				return ReviewResult{}, err
 			}
 
@@ -406,7 +412,7 @@ func (s *Store) Review(ctx context.Context, bookingID string, action ReviewActio
 			updated = append(updated, bookings[i])
 		}
 
-		if err := s.saveLocked(ctx, bookings); err != nil {
+		if err := s.saveStateLocked(ctx, state); err != nil {
 			return ReviewResult{}, err
 		}
 
@@ -431,7 +437,7 @@ func (s *Store) Review(ctx context.Context, bookingID string, action ReviewActio
 		target.ReviewedAt = timePtr(now)
 		target.Resolution = ResolutionRejected
 
-		if err := s.saveLocked(ctx, bookings); err != nil {
+		if err := s.saveStateLocked(ctx, state); err != nil {
 			return ReviewResult{}, err
 		}
 
@@ -456,10 +462,11 @@ func (s *Store) Cancel(ctx context.Context, bookingID string, now time.Time) (Bo
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	bookings, err := s.loadLocked()
+	state, err := s.loadStateLocked()
 	if err != nil {
 		return Booking{}, err
 	}
+	bookings := state.bookings
 
 	for i := range bookings {
 		if bookings[i].ID != bookingID {
@@ -472,7 +479,7 @@ func (s *Store) Cancel(ctx context.Context, bookingID string, now time.Time) (Bo
 		bookings[i].Status = BookingStatusCancelled
 		bookings[i].ReviewedAt = timePtr(now)
 		bookings[i].Resolution = ResolutionCancelled
-		if err := s.saveLocked(ctx, bookings); err != nil {
+		if err := s.saveStateLocked(ctx, state); err != nil {
 			return Booking{}, err
 		}
 		return bookings[i], nil
@@ -491,10 +498,11 @@ func (s *Store) Reschedule(ctx context.Context, bookingID string, slot Slot, now
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	bookings, err := s.loadLocked()
+	state, err := s.loadStateLocked()
 	if err != nil {
 		return Booking{}, err
 	}
+	bookings := state.bookings
 
 	index := -1
 	for i := range bookings {
@@ -526,23 +534,31 @@ func (s *Store) Reschedule(ctx context.Context, bookingID string, slot Slot, now
 		bookings[index].Status = BookingStatusPending
 	}
 
-	if err := s.saveLocked(ctx, bookings); err != nil {
+	if err := s.saveStateLocked(ctx, state); err != nil {
 		return Booking{}, err
 	}
 	return bookings[index], nil
 }
 
 func (s *Store) loadLocked() ([]Booking, error) {
+	state, err := s.loadStateLocked()
+	if err != nil {
+		return nil, err
+	}
+	return state.bookings, nil
+}
+
+func (s *Store) loadStateLocked() (bookingState, error) {
 	file, err := os.Open(s.path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return nil, nil
+			return bookingState{}, nil
 		}
-		return nil, err
+		return bookingState{}, err
 	}
 	defer file.Close()
 
-	bookings := make([]Booking, 0)
+	state := bookingState{bookings: make([]Booking, 0)}
 	scanner := bufio.NewScanner(file)
 	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 
@@ -554,19 +570,24 @@ func (s *Store) loadLocked() ([]Booking, error) {
 
 		var booking Booking
 		if err := json.Unmarshal(line, &booking); err != nil {
+			state.invalidLines = append(state.invalidLines, append([]byte(nil), line...))
 			continue
 		}
-		bookings = append(bookings, booking)
+		state.bookings = append(state.bookings, booking)
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, err
+		return bookingState{}, err
 	}
 
-	return bookings, nil
+	return state, nil
 }
 
 func (s *Store) saveLocked(ctx context.Context, bookings []Booking) error {
+	return s.saveStateLocked(ctx, bookingState{bookings: bookings})
+}
+
+func (s *Store) saveStateLocked(ctx context.Context, state bookingState) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
@@ -592,12 +613,24 @@ func (s *Store) saveLocked(ctx context.Context, bookings []Booking) error {
 		return err
 	}
 
-	for _, booking := range bookings {
+	for _, booking := range state.bookings {
 		payload, err := json.Marshal(booking)
 		if err != nil {
 			return writeErr(err)
 		}
 		if _, err := writer.Write(payload); err != nil {
+			return writeErr(err)
+		}
+		if err := writer.WriteByte('\n'); err != nil {
+			return writeErr(err)
+		}
+	}
+
+	for _, line := range state.invalidLines {
+		if len(line) == 0 {
+			continue
+		}
+		if _, err := writer.Write(line); err != nil {
 			return writeErr(err)
 		}
 		if err := writer.WriteByte('\n'); err != nil {

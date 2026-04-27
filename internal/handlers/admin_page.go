@@ -264,7 +264,7 @@ func adminDateSlotOptions() []AdminDateSlotOption {
 	lastStartMinutes := 21*60 + 35
 	durationMinutes := 55
 
-	for value := startMinutes; value <= lastStartMinutes; value += 5 {
+	for value := startMinutes; value <= lastStartMinutes; value += 25 {
 		startHour := value / 60
 		startMinute := value % 60
 		endValue := value + durationMinutes

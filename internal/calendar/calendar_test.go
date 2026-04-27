@@ -1,7 +1,9 @@
 package calendar
 
 import (
+	"bytes"
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -115,6 +117,192 @@ func TestRejectKeepsSlotAvailable(t *testing.T) {
 	}
 	if reopenedSlot.Disabled {
 		t.Fatalf("expected rejected slot %s to remain enabled", slot.ID)
+	}
+}
+
+func TestCancelPreservesMalformedLinesInBookingsFile(t *testing.T) {
+	location, err := time.LoadLocation("Europe/Moscow")
+	if err != nil {
+		t.Fatalf("load location: %v", err)
+	}
+
+	tempDir := t.TempDir()
+	bookingsPath := filepath.Join(tempDir, "bookings.jsonl")
+	service, err := NewService("Europe/Moscow", bookingsPath, filepath.Join(tempDir, "slot-rules.json"))
+	if err != nil {
+		t.Fatalf("new service: %v", err)
+	}
+
+	service.now = func() time.Time {
+		return time.Date(2026, time.April, 16, 6, 0, 0, 0, location)
+	}
+
+	slot := service.AvailableSlots()[0]
+	booking, err := service.Book(context.Background(), BookingRequest{
+		SlotID: slot.ID,
+		Name:   "Мария Иванова",
+		Email:  "maria@example.com",
+		Phone:  "+79990000005",
+	})
+	if err != nil {
+		t.Fatalf("book: %v", err)
+	}
+
+	file, err := os.OpenFile(bookingsPath, os.O_APPEND|os.O_WRONLY, 0o600)
+	if err != nil {
+		t.Fatalf("open bookings file: %v", err)
+	}
+	if _, err := file.WriteString("{not-json}\n"); err != nil {
+		file.Close()
+		t.Fatalf("append malformed line: %v", err)
+	}
+	if err := file.Close(); err != nil {
+		t.Fatalf("close bookings file: %v", err)
+	}
+
+	if _, err := service.Cancel(context.Background(), booking.ID); err != nil {
+		t.Fatalf("cancel booking: %v", err)
+	}
+
+	payload, err := os.ReadFile(bookingsPath)
+	if err != nil {
+		t.Fatalf("read bookings file: %v", err)
+	}
+
+	if !bytes.Contains(payload, []byte("{not-json}")) {
+		t.Fatalf("expected malformed line to be preserved, got %q", string(payload))
+	}
+	if !bytes.Contains(payload, []byte(`"status":"cancelled"`)) {
+		t.Fatalf("expected cancelled booking to be saved, got %q", string(payload))
+	}
+}
+
+func TestDateRuleOverridesWeeklyScheduleForDay(t *testing.T) {
+	location, err := time.LoadLocation("Europe/Moscow")
+	if err != nil {
+		t.Fatalf("load location: %v", err)
+	}
+
+	tempDir := t.TempDir()
+	service, err := NewService("Europe/Moscow", filepath.Join(tempDir, "bookings.jsonl"), filepath.Join(tempDir, "slot-rules.json"))
+	if err != nil {
+		t.Fatalf("new service: %v", err)
+	}
+
+	service.now = func() time.Time {
+		return time.Date(2026, time.April, 16, 6, 0, 0, 0, location)
+	}
+
+	initialSlots := service.AvailableSlots()
+	if len(initialSlots) == 0 {
+		t.Fatal("expected default slots")
+	}
+
+	targetDate := initialSlots[0].Start.Format("2006-01-02")
+	if _, err := service.AddRule(context.Background(), SlotRuleInput{
+		Scope:           SlotRuleScopeDate,
+		Date:            targetDate,
+		StartTimes:      []string{"10:25", "11:45"},
+		DurationMinutes: 55,
+	}); err != nil {
+		t.Fatalf("add date rule: %v", err)
+	}
+
+	var daySlots []Slot
+	for _, slot := range service.AvailableSlots() {
+		if slot.Start.Format("2006-01-02") == targetDate {
+			daySlots = append(daySlots, slot)
+		}
+	}
+
+	if len(daySlots) != 2 {
+		t.Fatalf("expected only 2 date-specific slots on %s, got %d", targetDate, len(daySlots))
+	}
+
+	got := []string{
+		daySlots[0].Start.Format("15:04"),
+		daySlots[1].Start.Format("15:04"),
+	}
+	want := []string{"10:25", "11:45"}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("expected slot %d to start at %s, got %s", i, want[i], got[i])
+		}
+	}
+}
+
+func TestSlotBecomesUnavailableOneHourBeforeStart(t *testing.T) {
+	location, err := time.LoadLocation("Europe/Moscow")
+	if err != nil {
+		t.Fatalf("load location: %v", err)
+	}
+
+	tempDir := t.TempDir()
+	service, err := NewService("Europe/Moscow", filepath.Join(tempDir, "bookings.jsonl"), filepath.Join(tempDir, "slot-rules.json"))
+	if err != nil {
+		t.Fatalf("new service: %v", err)
+	}
+
+	service.now = func() time.Time {
+		return time.Date(2026, time.April, 16, 17, 0, 0, 0, location)
+	}
+	if !containsSlot(service.AvailableSlots(), "20260416T1800") {
+		t.Fatal("expected 18:00 slot to remain available exactly one hour before start")
+	}
+
+	service.now = func() time.Time {
+		return time.Date(2026, time.April, 16, 17, 1, 0, 0, location)
+	}
+	if containsSlot(service.AvailableSlots(), "20260416T1800") {
+		t.Fatal("expected 18:00 slot to disappear once less than one hour remains")
+	}
+}
+
+func TestSlotsVisibleForAtMostOneMonthAhead(t *testing.T) {
+	location, err := time.LoadLocation("Europe/Moscow")
+	if err != nil {
+		t.Fatalf("load location: %v", err)
+	}
+
+	tempDir := t.TempDir()
+	service, err := NewService("Europe/Moscow", filepath.Join(tempDir, "bookings.jsonl"), filepath.Join(tempDir, "slot-rules.json"))
+	if err != nil {
+		t.Fatalf("new service: %v", err)
+	}
+
+	service.now = func() time.Time {
+		return time.Date(2026, time.April, 16, 6, 0, 0, 0, location)
+	}
+
+	limitDay := time.Date(2026, time.May, 16, 23, 59, 59, 0, location)
+	hasLimitDaySlot := false
+
+	for _, slot := range service.AvailableSlots() {
+		if slot.Start.After(limitDay) {
+			t.Fatalf("expected no slots after %s, got %s", limitDay.Format(time.RFC3339), slot.Start.Format(time.RFC3339))
+		}
+		if slot.Start.Format("2006-01-02") == "2026-05-16" {
+			hasLimitDaySlot = true
+		}
+	}
+
+	if !hasLimitDaySlot {
+		t.Fatal("expected slots to remain visible through the same date next month")
+	}
+}
+
+func TestOneMonthAheadExclusiveClampsToEndOfNextMonth(t *testing.T) {
+	location, err := time.LoadLocation("Europe/Moscow")
+	if err != nil {
+		t.Fatalf("load location: %v", err)
+	}
+
+	startDay := time.Date(2026, time.January, 31, 0, 0, 0, 0, location)
+	got := oneMonthAheadExclusive(startDay)
+	want := time.Date(2026, time.March, 1, 0, 0, 0, 0, location)
+
+	if !got.Equal(want) {
+		t.Fatalf("expected exclusive end %s, got %s", want.Format(time.RFC3339), got.Format(time.RFC3339))
 	}
 }
 

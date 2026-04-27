@@ -8,7 +8,7 @@
   <meta name="description" content="{{.Description}}">
   <link rel="preload" href="/static/img/hero.jpg" as="image">
   <link rel="stylesheet" href="/static/css/styles.css">
-  {{if .Site.FontSans}}<style>:root { --font-sans: {{.Site.FontSans}}; }</style>{{end}}
+  {{with fontStack .Site.FontSans}}<style>:root { --font-sans: {{.}}; }</style>{{end}}
 </head>
 <body class="t-body">
   <a class="skip-link" href="#content">К содержанию</a>

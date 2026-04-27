@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"io/fs"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -19,8 +20,10 @@ func NewRenderer() (*Renderer, error) {
 	renderer := &Renderer{pages: make(map[string]*template.Template)}
 	for _, page := range []string{"home", "rules", "memo", "privacy", "booking", "thanks", "administrator"} {
 		parsed, err := template.New(page).Funcs(template.FuncMap{
-			"year": func() int { return time.Now().Year() },
-			"mod":  func(a, b int) int { return a % b },
+			"year":      func() int { return time.Now().Year() },
+			"mod":       func(a, b int) int { return a % b },
+			"fontStack": safeFontStack,
+			"phoneHref": phoneHref,
 			"containsInt": func(values []int, target int) bool {
 				for _, value := range values {
 					if value == target {
@@ -60,4 +63,48 @@ func StaticHandler() http.Handler {
 		return http.NotFoundHandler()
 	}
 	return http.FileServer(http.FS(staticFS))
+}
+
+func safeFontStack(value string) template.CSS {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+
+	for _, r := range value {
+		switch {
+		case r >= 'a' && r <= 'z':
+		case r >= 'A' && r <= 'Z':
+		case r >= '0' && r <= '9':
+		case strings.ContainsRune(" ,\"'-_", r):
+		default:
+			return ""
+		}
+	}
+
+	return template.CSS(value)
+}
+
+func phoneHref(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+
+	var builder strings.Builder
+	for i, r := range value {
+		switch {
+		case r >= '0' && r <= '9':
+			builder.WriteRune(r)
+		case r == '+' && i == 0:
+			builder.WriteRune(r)
+		}
+	}
+
+	normalized := builder.String()
+	if normalized == "" || normalized == "+" {
+		return value
+	}
+
+	return normalized
 }
