@@ -178,7 +178,7 @@ func TestCancelPreservesMalformedLinesInBookingsFile(t *testing.T) {
 	}
 }
 
-func TestDateRuleKeepsNonConflictingWeeklySlotsAndReplacesOverlappingOnes(t *testing.T) {
+func TestReplaceDateScheduleOverridesOnlySelectedDay(t *testing.T) {
 	location, err := time.LoadLocation("Europe/Moscow")
 	if err != nil {
 		t.Fatalf("load location: %v", err)
@@ -195,39 +195,27 @@ func TestDateRuleKeepsNonConflictingWeeklySlotsAndReplacesOverlappingOnes(t *tes
 	}
 
 	err = service.ReplaceWeeklySchedule(context.Background(), []WeeklyScheduleDay{
-		{Day: 2, StartTimes: []string{"09:00", "10:00", "11:00"}},
+		{Day: 2, StartTimes: []string{"09:00", "10:00", "11:00", "12:00"}},
 	})
 	if err != nil {
 		t.Fatalf("replace weekly schedule: %v", err)
 	}
 
 	targetDate := "2026-04-28"
-	if _, err := service.AddRule(context.Background(), SlotRuleInput{
-		Scope:           SlotRuleScopeDate,
-		Date:            targetDate,
-		StartTimes:      []string{"10:15"},
-		DurationMinutes: 55,
-	}); err != nil {
-		t.Fatalf("add date rule: %v", err)
+	if err := service.ReplaceDateSchedule(context.Background(), targetDate, []string{"09:00", "10:15", "12:00"}); err != nil {
+		t.Fatalf("replace date schedule: %v", err)
 	}
 
 	got := slotStartsForDate(service.AvailableSlots(), targetDate)
-	want := []string{"09:00", "10:15"}
+	want := []string{"09:00", "10:15", "12:00"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("expected slots %v on %s, got %v", want, targetDate, got)
 	}
 
-	err = service.ReplaceWeeklySchedule(context.Background(), []WeeklyScheduleDay{
-		{Day: 2, StartTimes: []string{"09:00", "10:00", "11:00", "12:00"}},
-	})
-	if err != nil {
-		t.Fatalf("replace weekly schedule with extra slot: %v", err)
-	}
-
-	got = slotStartsForDate(service.AvailableSlots(), targetDate)
-	want = []string{"09:00", "10:15", "12:00"}
+	got = slotStartsForDate(service.AvailableSlots(), "2026-05-05")
+	want = []string{"09:00", "10:00", "11:00", "12:00"}
 	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("expected updated slots %v on %s, got %v", want, targetDate, got)
+		t.Fatalf("expected weekly schedule to stay active on future tuesday, got %v", got)
 	}
 }
 
@@ -245,6 +233,101 @@ func TestDateRuleRequiresAtLeastOneStartTime(t *testing.T) {
 		DurationMinutes: 55,
 	}); err == nil {
 		t.Fatal("expected date rule without start times to fail")
+	}
+}
+
+func TestLegacyDateRulesForSameDayResolveToLatestNonOverlappingSchedule(t *testing.T) {
+	location, err := time.LoadLocation("Europe/Moscow")
+	if err != nil {
+		t.Fatalf("load location: %v", err)
+	}
+
+	tempDir := t.TempDir()
+	service, err := NewService("Europe/Moscow", filepath.Join(tempDir, "bookings.jsonl"), filepath.Join(tempDir, "slot-rules.json"))
+	if err != nil {
+		t.Fatalf("new service: %v", err)
+	}
+
+	service.now = func() time.Time {
+		return time.Date(2026, time.April, 27, 8, 0, 0, 0, location)
+	}
+
+	if err := service.ReplaceWeeklySchedule(context.Background(), []WeeklyScheduleDay{
+		{Day: 2, StartTimes: []string{"09:00", "10:00", "11:00", "12:00"}},
+	}); err != nil {
+		t.Fatalf("replace weekly schedule: %v", err)
+	}
+
+	targetDate := "2026-04-28"
+	if _, err := service.AddRule(context.Background(), SlotRuleInput{
+		Scope:           SlotRuleScopeDate,
+		Date:            targetDate,
+		StartTimes:      []string{"10:15"},
+		DurationMinutes: 55,
+	}); err != nil {
+		t.Fatalf("add custom date rule: %v", err)
+	}
+
+	got, err := service.ScheduleForDate(targetDate)
+	if err != nil {
+		t.Fatalf("schedule for date: %v", err)
+	}
+
+	want := []string{"09:00", "10:15", "12:00"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("expected merged date schedule %v, got %v", want, got)
+	}
+
+	got = slotStartsForDate(service.AvailableSlots(), targetDate)
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("expected visible slots %v on %s, got %v", want, targetDate, got)
+	}
+}
+
+func TestDeleteDateScheduleRemovesAllRulesForSelectedDate(t *testing.T) {
+	location, err := time.LoadLocation("Europe/Moscow")
+	if err != nil {
+		t.Fatalf("load location: %v", err)
+	}
+
+	tempDir := t.TempDir()
+	service, err := NewService("Europe/Moscow", filepath.Join(tempDir, "bookings.jsonl"), filepath.Join(tempDir, "slot-rules.json"))
+	if err != nil {
+		t.Fatalf("new service: %v", err)
+	}
+
+	service.now = func() time.Time {
+		return time.Date(2026, time.April, 27, 8, 0, 0, 0, location)
+	}
+
+	targetDate := "2026-04-28"
+	if _, err := service.AddRule(context.Background(), SlotRuleInput{
+		Scope:           SlotRuleScopeDate,
+		Date:            targetDate,
+		StartTimes:      []string{"09:00", "10:00"},
+		DurationMinutes: 55,
+	}); err != nil {
+		t.Fatalf("add first date rule: %v", err)
+	}
+	if _, err := service.AddRule(context.Background(), SlotRuleInput{
+		Scope:           SlotRuleScopeDate,
+		Date:            targetDate,
+		StartTimes:      []string{"12:00"},
+		DurationMinutes: 55,
+	}); err != nil {
+		t.Fatalf("add second date rule: %v", err)
+	}
+
+	if err := service.DeleteDateSchedule(context.Background(), targetDate); err != nil {
+		t.Fatalf("delete date schedule: %v", err)
+	}
+
+	schedules, err := service.DateSchedules()
+	if err != nil {
+		t.Fatalf("date schedules: %v", err)
+	}
+	if len(schedules) != 0 {
+		t.Fatalf("expected date schedules to be removed, got %+v", schedules)
 	}
 }
 

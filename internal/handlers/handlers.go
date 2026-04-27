@@ -83,6 +83,7 @@ type AdminBookingView struct {
 }
 
 type AdminSlotRuleView struct {
+	Date         string
 	ID           string
 	ScopeLabel   string
 	PatternLabel string
@@ -208,6 +209,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/administrator/logout", h.administratorLogout)
 	mux.HandleFunc("/administrator/slots/weekly", h.administratorWeeklyScheduleSave)
 	mux.HandleFunc("/administrator/slots/create", h.administratorSlotsCreate)
+	mux.HandleFunc("/administrator/slots/day", h.administratorSlotsDay)
 	mux.HandleFunc("/administrator/slots/delete", h.administratorSlotsDelete)
 	mux.HandleFunc("/administrator/bookings/cancel", h.administratorBookingCancel)
 	mux.HandleFunc("/administrator/bookings/reschedule", h.administratorBookingReschedule)

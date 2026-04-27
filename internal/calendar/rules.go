@@ -15,13 +15,15 @@ import (
 )
 
 const (
-	SlotRuleScopeWeekly = "weekly"
-	SlotRuleScopeDate   = "date"
+	SlotRuleScopeWeekly  = "weekly"
+	SlotRuleScopeDate    = "date"
+	SlotRuleModeOverride = "override"
 )
 
 type SlotRule struct {
 	ID              string    `json:"id"`
 	Scope           string    `json:"scope"`
+	Mode            string    `json:"mode,omitempty"`
 	Date            string    `json:"date,omitempty"`
 	Weekdays        []int     `json:"weekdays,omitempty"`
 	StartTimes      []string  `json:"start_times"`
@@ -39,6 +41,11 @@ type SlotRuleInput struct {
 
 type WeeklyScheduleDay struct {
 	Day        int
+	StartTimes []string
+}
+
+type DateSchedule struct {
+	Date       string
 	StartTimes []string
 }
 

@@ -94,7 +94,7 @@
                     <section class="admin-oneoff-section">
                       <div class="admin-oneoff-section__head">
                         <span class="admin-field-title">Дата</span>
-                        <p class="admin-oneoff-section__text">Выберите день в календаре и затем добавьте на него нужные интервалы времени.</p>
+                        <p class="admin-oneoff-section__text">Выберите день в календаре: после выбора сюда подгрузятся текущие слоты этого дня. Их можно удалить, добавить свои и сохранить только для этой даты.</p>
                       </div>
 
                       <div class="admin-date-control" data-admin-date-picker>
@@ -200,7 +200,7 @@
 
                   <div class="admin-format">
                     <strong>Как работает</strong>
-                    <p>Вы выбираете диапазоны времени готовыми карточками. Можно добавить сразу несколько слотов на одну дату, а затем сохранить всё одной кнопкой. Разовые слоты добавляются к недельному расписанию, а если такой слот пересекается с автоматическим, на эту дату показывается только точечный слот.</p>
+                    <p>Неделя остаётся базовым расписанием. На дату подгружается текущий набор слотов этого дня: можно убрать один стандартный слот, добавить свой и сохранить итог только для выбранной даты. Если новый слот пересекается с уже существующим, на этой дате сохраняется ваш новый вариант.</p>
                   </div>
 
                   <button class="t-btn t-btnflex t-btnflex_type_bbutton t-btnflex_md admin-submit" type="submit">
@@ -226,7 +226,7 @@
                           <p class="admin-list-card__text">Время начала: {{.TimesLabel}}</p>
                         </div>
                         <form method="post" action="/administrator/slots/delete">
-                          <input type="hidden" name="rule_id" value="{{.ID}}">
+                          <input type="hidden" name="date" value="{{.Date}}">
                           <button class="admin-link-button" type="submit">Удалить</button>
                         </form>
                       </article>

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -85,13 +86,19 @@ func (h *Handler) administratorSlotsCreate(w http.ResponseWriter, r *http.Reques
 		mode = calendar.SlotRuleScopeWeekly
 	}
 
-	_, err := h.calendar.AddRule(r.Context(), calendar.SlotRuleInput{
-		Scope:           mode,
-		Date:            date,
-		Weekdays:        weekdays,
-		StartTimes:      times,
-		DurationMinutes: 55,
-	})
+	var err error
+	switch mode {
+	case calendar.SlotRuleScopeDate:
+		err = h.calendar.ReplaceDateSchedule(r.Context(), date, times)
+	default:
+		_, err = h.calendar.AddRule(r.Context(), calendar.SlotRuleInput{
+			Scope:           mode,
+			Date:            date,
+			Weekdays:        weekdays,
+			StartTimes:      times,
+			DurationMinutes: 55,
+		})
+	}
 	if err != nil {
 		h.renderAdministratorPage(w, r, PageData{
 			AdminTab:          "calendar",
@@ -107,6 +114,30 @@ func (h *Handler) administratorSlotsCreate(w http.ResponseWriter, r *http.Reques
 	http.Redirect(w, r, "/administrator?tab=calendar&notice=slot-created", http.StatusSeeOther)
 }
 
+func (h *Handler) administratorSlotsDay(w http.ResponseWriter, r *http.Request) {
+	if !requireMethod(w, r, http.MethodGet) || !h.administratorRequireAuth(w, r) {
+		return
+	}
+
+	date := strings.TrimSpace(r.URL.Query().Get("date"))
+	times, err := h.calendar.ScheduleForDate(date)
+	if err != nil {
+		http.Error(w, "Укажите корректную дату.", http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	if err := json.NewEncoder(w).Encode(struct {
+		Date  string   `json:"date"`
+		Times []string `json:"times"`
+	}{
+		Date:  date,
+		Times: times,
+	}); err != nil {
+		h.logger.Error("encode date schedule", "date", date, "error", err)
+	}
+}
+
 func (h *Handler) administratorSlotsDelete(w http.ResponseWriter, r *http.Request) {
 	if !requireMethod(w, r, http.MethodPost) || !h.administratorRequireAuth(w, r) {
 		return
@@ -116,7 +147,16 @@ func (h *Handler) administratorSlotsDelete(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if err := h.calendar.DeleteRule(r.Context(), strings.TrimSpace(r.FormValue("rule_id"))); err != nil {
+	date := strings.TrimSpace(r.FormValue("date"))
+	ruleID := strings.TrimSpace(r.FormValue("rule_id"))
+
+	var err error
+	if date != "" {
+		err = h.calendar.DeleteDateSchedule(r.Context(), date)
+	} else {
+		err = h.calendar.DeleteRule(r.Context(), ruleID)
+	}
+	if err != nil {
 		h.renderAdministratorPage(w, r, PageData{
 			AdminTab:   "calendar",
 			AdminError: "Не удалось удалить правило слотов.",

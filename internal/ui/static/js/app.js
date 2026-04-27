@@ -100,6 +100,42 @@
     return { hour: match[1], minute: match[2] };
   };
 
+  const adminSlotDurationMinutes = 55;
+
+  const timeToMinutes = (value) => {
+    const parts = parseTimeParts(value);
+    if (!parts) {
+      return Number.NaN;
+    }
+    return Number(parts.hour) * 60 + Number(parts.minute);
+  };
+
+  const minutesToAdminTime = (value) => {
+    const hour = Math.floor(value / 60);
+    const minute = value % 60;
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  };
+
+  const slotEndForStart = (value) => {
+    const startMinutes = timeToMinutes(value);
+    if (!Number.isFinite(startMinutes)) {
+      return '';
+    }
+    return minutesToAdminTime(startMinutes + adminSlotDurationMinutes);
+  };
+
+  const adminRangesOverlap = (firstStart, secondStart) => {
+    const firstMinutes = timeToMinutes(firstStart);
+    const secondMinutes = timeToMinutes(secondStart);
+    if (!Number.isFinite(firstMinutes) || !Number.isFinite(secondMinutes)) {
+      return false;
+    }
+
+    const firstEnd = firstMinutes + adminSlotDurationMinutes;
+    const secondEnd = secondMinutes + adminSlotDurationMinutes;
+    return firstMinutes < secondEnd && secondMinutes < firstEnd;
+  };
+
   const adminDateLabelFormatter = new Intl.DateTimeFormat('ru-RU', {
     day: '2-digit',
     month: '2-digit',
@@ -233,6 +269,7 @@
         button.addEventListener('click', () => {
           selectedDate = currentDate;
           hiddenInput.value = formatAdminISODate(currentDate);
+          hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
           visibleMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
           syncLabel();
           renderCalendar();
@@ -264,6 +301,7 @@
     clearButton?.addEventListener('click', () => {
       selectedDate = null;
       hiddenInput.value = '';
+      hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
       syncLabel();
       renderCalendar();
       closePopover();
@@ -272,6 +310,7 @@
     todayButton?.addEventListener('click', () => {
       selectedDate = today;
       hiddenInput.value = formatAdminISODate(today);
+      hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
       visibleMonth = new Date(today.getFullYear(), today.getMonth(), 1);
       syncLabel();
       renderCalendar();
@@ -340,17 +379,26 @@
     const endToStart = new Map(slotOptions.map((option) => [option.end, option.value]));
     const validStartTimes = slotOptions.map((option) => option.value);
     const validEndTimes = Array.from(new Set(slotOptions.map((option) => option.end))).sort();
+    let loadToken = 0;
 
-    let selectedSlots = hiddenTimes.value
-      .split('\n')
+    const normalizeSelectedSlots = (values) => values
       .map(normalizeAdminTime)
       .filter(Boolean)
       .filter((value, index, array) => array.indexOf(value) === index)
-      .sort();
+      .sort((left, right) => timeToMinutes(left) - timeToMinutes(right));
+
+    const slotLabel = (value) => optionMap.get(value) || `${value}-${slotEndForStart(value)}`;
+
+    const replaceOverlappingSlots = (values, priorityValue) => normalizeSelectedSlots([
+      ...values.filter((value) => value === priorityValue || !adminRangesOverlap(value, priorityValue)),
+      priorityValue,
+    ]);
+
+    let selectedSlots = normalizeSelectedSlots(hiddenTimes.value.split('\n'));
 
     let currentRange = {
-      start: selectedSlots[0] || '',
-      end: selectedSlots[0] ? (startToEnd.get(selectedSlots[0]) || '') : '',
+      start: '',
+      end: '',
     };
     let activeTimeField = 'start';
     let draftTime = '';
@@ -545,7 +593,7 @@
         chip.className = 'admin-selected-slot-chip';
 
         const text = document.createElement('span');
-        text.textContent = optionMap.get(value) || value;
+        text.textContent = slotLabel(value);
 
         const remove = document.createElement('button');
         remove.type = 'button';
@@ -559,6 +607,64 @@
         chip.append(text, remove);
         selectedList.appendChild(chip);
       });
+    };
+
+    const resetCurrentRange = () => {
+      currentRange = { start: '', end: '' };
+      draftTime = '';
+      syncTimeTrigger('start');
+      syncTimeTrigger('end');
+    };
+
+    const loadDateSlots = async (date) => {
+      resetCurrentRange();
+
+      if (!dateInput) {
+        renderSelected();
+        syncCurrentSlot();
+        return;
+      }
+
+      if (!date) {
+        selectedSlots = [];
+        renderSelected();
+        syncCurrentSlot('Сначала выберите диапазон времени');
+        return;
+      }
+
+      const token = ++loadToken;
+      syncCurrentSlot('Загружаю слоты на эту дату...');
+
+      try {
+        const response = await fetch(`/administrator/slots/day?date=${encodeURIComponent(date)}`, {
+          headers: {
+            Accept: 'application/json',
+          },
+        });
+        if (!response.ok) {
+          throw new Error('load failed');
+        }
+
+        const payload = await response.json();
+        if (token !== loadToken) {
+          return;
+        }
+
+        selectedSlots = normalizeSelectedSlots(Array.isArray(payload.times) ? payload.times : []);
+        renderSelected();
+        if (selectedSlots.length > 0) {
+          syncCurrentSlot('Слоты на дату загружены. Можно убрать лишние или добавить свои.');
+        } else {
+          syncCurrentSlot('На эту дату пока нет слотов. Добавьте нужные интервалы.');
+        }
+      } catch (error) {
+        if (token !== loadToken) {
+          return;
+        }
+        selectedSlots = [];
+        renderSelected();
+        syncCurrentSlot('Не удалось загрузить слоты на эту дату');
+      }
     };
 
     triggerButtons.start?.addEventListener('click', () => {
@@ -582,10 +688,7 @@
     });
 
     clearTimeButton?.addEventListener('click', () => {
-      currentRange = { start: '', end: '' };
-      draftTime = '';
-      syncTimeTrigger('start');
-      syncTimeTrigger('end');
+      resetCurrentRange();
       syncCurrentSlot();
       closeTimePopover();
     });
@@ -598,24 +701,31 @@
       }
 
       if (selectedSlots.includes(currentRange.start)) {
-        syncCurrentSlot(`Этот диапазон уже добавлен: ${optionMap.get(currentRange.start) || currentRange.start}`);
+        syncCurrentSlot(`Этот диапазон уже добавлен: ${slotLabel(currentRange.start)}`);
         return;
       }
 
-      const addedLabel = optionMap.get(currentRange.start) || `${currentRange.start}-${currentRange.end}`;
-      selectedSlots = [...selectedSlots, currentRange.start].sort();
+      const removedSlots = selectedSlots.filter((value) => adminRangesOverlap(value, currentRange.start));
+      const addedLabel = slotLabel(currentRange.start);
+      selectedSlots = replaceOverlappingSlots(selectedSlots, currentRange.start);
       renderSelected();
-      currentRange = { start: '', end: '' };
-      draftTime = '';
-      syncTimeTrigger('start');
-      syncTimeTrigger('end');
+      resetCurrentRange();
       closeTimePopover();
+      if (removedSlots.length > 0) {
+        syncCurrentSlot(`Добавлено: ${addedLabel}. Пересекающиеся слоты на эту дату обновлены.`);
+        return;
+      }
       syncCurrentSlot(`Добавлено: ${addedLabel}`);
     });
 
     clearSlotsButton?.addEventListener('click', () => {
       selectedSlots = [];
       renderSelected();
+      syncCurrentSlot('Список слотов на эту дату очищен');
+    });
+
+    dateInput?.addEventListener('change', () => {
+      loadDateSlots(dateInput.value);
     });
 
     form.addEventListener('submit', (event) => {
@@ -649,10 +759,13 @@
     });
 
     timePopover.setAttribute('aria-hidden', 'true');
-    syncTimeTrigger('start');
-    syncTimeTrigger('end');
+    resetCurrentRange();
     renderSelected();
     syncCurrentSlot();
+
+    if (dateInput?.value && !hiddenTimes.value.trim()) {
+      loadDateSlots(dateInput.value);
+    }
   });
 
   document.querySelectorAll('[data-weekday-card]').forEach((card) => {

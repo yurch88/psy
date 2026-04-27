@@ -161,23 +161,20 @@ func adminNotice(code string) (string, string) {
 }
 
 func (h *Handler) adminSlotRuleViews() []AdminSlotRuleView {
-	rules, err := h.calendar.Rules()
+	schedules, err := h.calendar.DateSchedules()
 	if err != nil {
-		h.logger.Error("list slot rules", "error", err)
+		h.logger.Error("list date schedules", "error", err)
 		return nil
 	}
 
-	views := make([]AdminSlotRuleView, 0, len(rules))
-	for _, rule := range rules {
-		if rule.Scope != calendar.SlotRuleScopeDate {
-			continue
-		}
+	views := make([]AdminSlotRuleView, 0, len(schedules))
+	for _, schedule := range schedules {
 		view := AdminSlotRuleView{
-			ID:         rule.ID,
-			TimesLabel: strings.Join(rule.StartTimes, ", "),
+			Date:       schedule.Date,
+			TimesLabel: strings.Join(schedule.StartTimes, ", "),
 		}
 		view.ScopeLabel = "Только на дату"
-		view.PatternLabel = rule.Date
+		view.PatternLabel = schedule.Date
 		if view.TimesLabel == "" {
 			view.TimesLabel = "Слоты не выбраны"
 		}
