@@ -231,6 +231,67 @@ func TestDateRuleOverridesWeeklyScheduleForDay(t *testing.T) {
 	}
 }
 
+func TestEmptyDateRuleHidesWeeklySlotsOnlyForThatDate(t *testing.T) {
+	location, err := time.LoadLocation("Europe/Moscow")
+	if err != nil {
+		t.Fatalf("load location: %v", err)
+	}
+
+	tempDir := t.TempDir()
+	service, err := NewService("Europe/Moscow", filepath.Join(tempDir, "bookings.jsonl"), filepath.Join(tempDir, "slot-rules.json"))
+	if err != nil {
+		t.Fatalf("new service: %v", err)
+	}
+
+	service.now = func() time.Time {
+		return time.Date(2026, time.April, 16, 6, 0, 0, 0, location)
+	}
+
+	allSlots := service.AvailableSlots()
+	if len(allSlots) < 2 {
+		t.Fatal("expected default slots")
+	}
+
+	targetDate := allSlots[0].Start.Format("2006-01-02")
+	nextSameWeekdayDate := ""
+	targetWeekday := allSlots[0].Start.Weekday()
+	for _, slot := range allSlots {
+		if slot.Start.Format("2006-01-02") != targetDate && slot.Start.Weekday() == targetWeekday {
+			nextSameWeekdayDate = slot.Start.Format("2006-01-02")
+			break
+		}
+	}
+	if nextSameWeekdayDate == "" {
+		t.Fatal("expected another day with the same weekday")
+	}
+
+	if _, err := service.AddRule(context.Background(), SlotRuleInput{
+		Scope:           SlotRuleScopeDate,
+		Date:            targetDate,
+		StartTimes:      nil,
+		DurationMinutes: 55,
+	}); err != nil {
+		t.Fatalf("add empty date rule: %v", err)
+	}
+
+	for _, slot := range service.AvailableSlots() {
+		if slot.Start.Format("2006-01-02") == targetDate {
+			t.Fatalf("expected no slots on override date %s, got %s", targetDate, slot.Start.Format(time.RFC3339))
+		}
+	}
+
+	hasFutureWeeklySlots := false
+	for _, slot := range service.AvailableSlots() {
+		if slot.Start.Format("2006-01-02") == nextSameWeekdayDate {
+			hasFutureWeeklySlots = true
+			break
+		}
+	}
+	if !hasFutureWeeklySlots {
+		t.Fatalf("expected weekly schedule to remain active on %s", nextSameWeekdayDate)
+	}
+}
+
 func TestSlotBecomesUnavailableOneHourBeforeStart(t *testing.T) {
 	location, err := time.LoadLocation("Europe/Moscow")
 	if err != nil {
