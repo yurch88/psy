@@ -5,6 +5,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -177,7 +178,7 @@ func TestCancelPreservesMalformedLinesInBookingsFile(t *testing.T) {
 	}
 }
 
-func TestDateRuleOverridesWeeklyScheduleForDay(t *testing.T) {
+func TestDateRuleKeepsNonConflictingWeeklySlotsAndReplacesOverlappingOnes(t *testing.T) {
 	location, err := time.LoadLocation("Europe/Moscow")
 	if err != nil {
 		t.Fatalf("load location: %v", err)
@@ -190,105 +191,60 @@ func TestDateRuleOverridesWeeklyScheduleForDay(t *testing.T) {
 	}
 
 	service.now = func() time.Time {
-		return time.Date(2026, time.April, 16, 6, 0, 0, 0, location)
+		return time.Date(2026, time.April, 27, 8, 0, 0, 0, location)
 	}
 
-	initialSlots := service.AvailableSlots()
-	if len(initialSlots) == 0 {
-		t.Fatal("expected default slots")
+	err = service.ReplaceWeeklySchedule(context.Background(), []WeeklyScheduleDay{
+		{Day: 2, StartTimes: []string{"09:00", "10:00", "11:00"}},
+	})
+	if err != nil {
+		t.Fatalf("replace weekly schedule: %v", err)
 	}
 
-	targetDate := initialSlots[0].Start.Format("2006-01-02")
+	targetDate := "2026-04-28"
 	if _, err := service.AddRule(context.Background(), SlotRuleInput{
 		Scope:           SlotRuleScopeDate,
 		Date:            targetDate,
-		StartTimes:      []string{"10:25", "11:45"},
+		StartTimes:      []string{"10:15"},
 		DurationMinutes: 55,
 	}); err != nil {
 		t.Fatalf("add date rule: %v", err)
 	}
 
-	var daySlots []Slot
-	for _, slot := range service.AvailableSlots() {
-		if slot.Start.Format("2006-01-02") == targetDate {
-			daySlots = append(daySlots, slot)
-		}
+	got := slotStartsForDate(service.AvailableSlots(), targetDate)
+	want := []string{"09:00", "10:15"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("expected slots %v on %s, got %v", want, targetDate, got)
 	}
 
-	if len(daySlots) != 2 {
-		t.Fatalf("expected only 2 date-specific slots on %s, got %d", targetDate, len(daySlots))
+	err = service.ReplaceWeeklySchedule(context.Background(), []WeeklyScheduleDay{
+		{Day: 2, StartTimes: []string{"09:00", "10:00", "11:00", "12:00"}},
+	})
+	if err != nil {
+		t.Fatalf("replace weekly schedule with extra slot: %v", err)
 	}
 
-	got := []string{
-		daySlots[0].Start.Format("15:04"),
-		daySlots[1].Start.Format("15:04"),
-	}
-	want := []string{"10:25", "11:45"}
-	for i := range want {
-		if got[i] != want[i] {
-			t.Fatalf("expected slot %d to start at %s, got %s", i, want[i], got[i])
-		}
+	got = slotStartsForDate(service.AvailableSlots(), targetDate)
+	want = []string{"09:00", "10:15", "12:00"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("expected updated slots %v on %s, got %v", want, targetDate, got)
 	}
 }
 
-func TestEmptyDateRuleHidesWeeklySlotsOnlyForThatDate(t *testing.T) {
-	location, err := time.LoadLocation("Europe/Moscow")
-	if err != nil {
-		t.Fatalf("load location: %v", err)
-	}
-
+func TestDateRuleRequiresAtLeastOneStartTime(t *testing.T) {
 	tempDir := t.TempDir()
 	service, err := NewService("Europe/Moscow", filepath.Join(tempDir, "bookings.jsonl"), filepath.Join(tempDir, "slot-rules.json"))
 	if err != nil {
 		t.Fatalf("new service: %v", err)
 	}
 
-	service.now = func() time.Time {
-		return time.Date(2026, time.April, 16, 6, 0, 0, 0, location)
-	}
-
-	allSlots := service.AvailableSlots()
-	if len(allSlots) < 2 {
-		t.Fatal("expected default slots")
-	}
-
-	targetDate := allSlots[0].Start.Format("2006-01-02")
-	nextSameWeekdayDate := ""
-	targetWeekday := allSlots[0].Start.Weekday()
-	for _, slot := range allSlots {
-		if slot.Start.Format("2006-01-02") != targetDate && slot.Start.Weekday() == targetWeekday {
-			nextSameWeekdayDate = slot.Start.Format("2006-01-02")
-			break
-		}
-	}
-	if nextSameWeekdayDate == "" {
-		t.Fatal("expected another day with the same weekday")
-	}
-
 	if _, err := service.AddRule(context.Background(), SlotRuleInput{
 		Scope:           SlotRuleScopeDate,
-		Date:            targetDate,
+		Date:            "2026-04-28",
 		StartTimes:      nil,
 		DurationMinutes: 55,
-	}); err != nil {
-		t.Fatalf("add empty date rule: %v", err)
-	}
-
-	for _, slot := range service.AvailableSlots() {
-		if slot.Start.Format("2006-01-02") == targetDate {
-			t.Fatalf("expected no slots on override date %s, got %s", targetDate, slot.Start.Format(time.RFC3339))
-		}
-	}
-
-	hasFutureWeeklySlots := false
-	for _, slot := range service.AvailableSlots() {
-		if slot.Start.Format("2006-01-02") == nextSameWeekdayDate {
-			hasFutureWeeklySlots = true
-			break
-		}
-	}
-	if !hasFutureWeeklySlots {
-		t.Fatalf("expected weekly schedule to remain active on %s", nextSameWeekdayDate)
+	}); err == nil {
+		t.Fatal("expected date rule without start times to fail")
 	}
 }
 
@@ -418,6 +374,16 @@ func containsSlot(slots []Slot, target string) bool {
 		}
 	}
 	return false
+}
+
+func slotStartsForDate(slots []Slot, targetDate string) []string {
+	starts := make([]string, 0)
+	for _, slot := range slots {
+		if slot.Start.Format("2006-01-02") == targetDate {
+			starts = append(starts, slot.Start.Format("15:04"))
+		}
+	}
+	return starts
 }
 
 func findSlot(slots []Slot, target string) (Slot, bool) {

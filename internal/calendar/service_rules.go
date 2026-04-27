@@ -9,6 +9,11 @@ import (
 	"time"
 )
 
+type slotWindow struct {
+	slot Slot
+	end  time.Time
+}
+
 func (s *Service) ensureDefaultRules() error {
 	if _, err := os.Stat(s.rules.path); err == nil {
 		return nil
@@ -178,34 +183,26 @@ func (s *Service) generatedSlots(reserved map[string]bool) []Slot {
 	seen := make(map[string]bool)
 
 	for day := startDay; day.Before(endDay); day = day.AddDate(0, 0, 1) {
-		for _, rule := range rulesForDay(rules, day) {
-			for _, startTime := range rule.StartTimes {
-				startMinutes, err := parseClock(startTime)
-				if err != nil {
-					continue
-				}
-
-				start := time.Date(day.Year(), day.Month(), day.Day(), startMinutes/60, startMinutes%60, 0, 0, s.location)
-				end := start.Add(time.Duration(rule.DurationMinutes) * time.Minute)
-				if start.Before(now.Add(time.Hour)) {
-					continue
-				}
-				if !end.After(start) {
-					continue
-				}
-
-				id := start.Format("20060102T1504")
-				if seen[id] {
-					continue
-				}
-				seen[id] = true
-				slots = append(slots, Slot{
-					ID:       id,
-					Start:    start,
-					End:      end,
-					Disabled: reserved[id],
-				})
+		dayRules := rulesForDay(rules, day)
+		dateWindows := collectDaySlotWindows(dayRules, SlotRuleScopeDate, day, now, s.location, reserved)
+		for _, window := range dateWindows {
+			if seen[window.slot.ID] {
+				continue
 			}
+			seen[window.slot.ID] = true
+			slots = append(slots, window.slot)
+		}
+
+		weeklyWindows := collectDaySlotWindows(dayRules, SlotRuleScopeWeekly, day, now, s.location, reserved)
+		for _, window := range weeklyWindows {
+			if overlapsAny(window, dateWindows) {
+				continue
+			}
+			if seen[window.slot.ID] {
+				continue
+			}
+			seen[window.slot.ID] = true
+			slots = append(slots, window.slot)
 		}
 	}
 
@@ -230,26 +227,65 @@ func oneMonthAheadExclusive(startDay time.Time) time.Time {
 }
 
 func rulesForDay(rules []SlotRule, day time.Time) []SlotRule {
-	hasDateOverride := false
-	for _, rule := range rules {
-		if rule.Scope == SlotRuleScopeDate && ruleAppliesToDate(rule, day) {
-			hasDateOverride = true
-			break
-		}
-	}
-
 	applicable := make([]SlotRule, 0, len(rules))
 	for _, rule := range rules {
 		if !ruleAppliesToDate(rule, day) {
-			continue
-		}
-		if hasDateOverride && rule.Scope != SlotRuleScopeDate {
 			continue
 		}
 		applicable = append(applicable, rule)
 	}
 
 	return applicable
+}
+
+func collectDaySlotWindows(rules []SlotRule, scope string, day, now time.Time, location *time.Location, reserved map[string]bool) []slotWindow {
+	windows := make([]slotWindow, 0, len(rules))
+	for _, rule := range rules {
+		if rule.Scope != scope {
+			continue
+		}
+		for _, startTime := range rule.StartTimes {
+			startMinutes, err := parseClock(startTime)
+			if err != nil {
+				continue
+			}
+
+			start := time.Date(day.Year(), day.Month(), day.Day(), startMinutes/60, startMinutes%60, 0, 0, location)
+			end := start.Add(time.Duration(rule.DurationMinutes) * time.Minute)
+			if start.Before(now.Add(time.Hour)) {
+				continue
+			}
+			if !end.After(start) {
+				continue
+			}
+
+			id := start.Format("20060102T1504")
+			windows = append(windows, slotWindow{
+				slot: Slot{
+					ID:       id,
+					Start:    start,
+					End:      end,
+					Disabled: reserved[id],
+				},
+				end: end,
+			})
+		}
+	}
+
+	return windows
+}
+
+func overlapsAny(window slotWindow, prioritized []slotWindow) bool {
+	for _, candidate := range prioritized {
+		if timesOverlap(window.slot.Start, window.end, candidate.slot.Start, candidate.end) {
+			return true
+		}
+	}
+	return false
+}
+
+func timesOverlap(firstStart, firstEnd, secondStart, secondEnd time.Time) bool {
+	return firstStart.Before(secondEnd) && secondStart.Before(firstEnd)
 }
 
 func ruleAppliesToDate(rule SlotRule, day time.Time) bool {

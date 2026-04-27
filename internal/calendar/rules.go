@@ -219,6 +219,9 @@ func normalizeSlotRuleInput(input SlotRuleInput) (SlotRuleInput, error) {
 		input.Weekdays = normalizedWeekdays
 		input.Date = ""
 	case SlotRuleScopeDate:
+		if len(startTimes) == 0 {
+			return SlotRuleInput{}, fmt.Errorf("empty start times")
+		}
 		sort.Strings(startTimes)
 		input.StartTimes = startTimes
 		if _, err := time.Parse("2006-01-02", strings.TrimSpace(input.Date)); err != nil {

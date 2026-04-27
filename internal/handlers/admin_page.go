@@ -179,7 +179,7 @@ func (h *Handler) adminSlotRuleViews() []AdminSlotRuleView {
 		view.ScopeLabel = "Только на дату"
 		view.PatternLabel = rule.Date
 		if view.TimesLabel == "" {
-			view.TimesLabel = "Слоты скрыты на эту дату"
+			view.TimesLabel = "Слоты не выбраны"
 		}
 		views = append(views, view)
 	}
