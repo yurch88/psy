@@ -139,15 +139,38 @@
 
                       <div class="admin-time-picker" data-admin-time-picker>
                         <div class="admin-time-range">
-                          <label>
-                            <span>Начало</span>
-                            <input type="time" min="09:00" max="22:29" step="60" data-admin-range-start>
-                          </label>
+                          <button class="admin-chooser-trigger admin-time-trigger" type="button" data-admin-time-trigger="start" aria-haspopup="dialog" aria-expanded="false">
+                            <span class="admin-time-trigger__meta">Начало</span>
+                            <span class="admin-time-trigger__value" data-admin-time-value="start" data-empty-label="Выберите время">Выберите время</span>
+                            <span class="admin-chooser-trigger__icon" aria-hidden="true">◷</span>
+                          </button>
 
-                          <label>
-                            <span>Конец</span>
-                            <input type="time" min="09:01" max="22:30" step="60" data-admin-range-end>
-                          </label>
+                          <button class="admin-chooser-trigger admin-time-trigger" type="button" data-admin-time-trigger="end" aria-haspopup="dialog" aria-expanded="false">
+                            <span class="admin-time-trigger__meta">Конец</span>
+                            <span class="admin-time-trigger__value" data-admin-time-value="end" data-empty-label="Выберите время">Выберите время</span>
+                            <span class="admin-chooser-trigger__icon" aria-hidden="true">◷</span>
+                          </button>
+                        </div>
+
+                        <div class="admin-time-popover" hidden data-admin-time-popover>
+                          <div class="admin-time-popover__title" data-admin-time-title>Выберите время</div>
+
+                          <div class="admin-time-popover__body">
+                            <div class="admin-time-wheel">
+                              <div class="admin-time-wheel__label">Часы</div>
+                              <div class="admin-time-wheel__list" data-admin-time-hours></div>
+                            </div>
+
+                            <div class="admin-time-wheel">
+                              <div class="admin-time-wheel__label">Минуты</div>
+                              <div class="admin-time-wheel__list" data-admin-time-minutes></div>
+                            </div>
+                          </div>
+
+                          <div class="admin-popover-actions">
+                            <button class="admin-soft-button" type="button" data-admin-time-clear>Очистить</button>
+                            <button class="admin-soft-button admin-soft-button-strong" type="button" data-admin-time-apply>OK</button>
+                          </div>
                         </div>
                       </div>
 

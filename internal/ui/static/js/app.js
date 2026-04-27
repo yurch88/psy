@@ -99,6 +99,12 @@
     return Number(parts.hour) * 60 + Number(parts.minute);
   };
 
+  const minutesToAdminTime = (value) => {
+    const hour = Math.floor(value / 60);
+    const minute = value % 60;
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  };
+
   const adminDateLabelFormatter = new Intl.DateTimeFormat('ru-RU', {
     day: '2-digit',
     month: '2-digit',
@@ -305,19 +311,38 @@
 
   document.querySelectorAll('[data-admin-date-form]').forEach((form) => {
     const dateInput = form.querySelector('[data-admin-date-input]');
-    const startInput = form.querySelector('[data-admin-range-start]');
-    const endInput = form.querySelector('[data-admin-range-end]');
+    const timePicker = form.querySelector('[data-admin-time-picker]');
+    const timePopover = form.querySelector('[data-admin-time-popover]');
+    const timeTitle = form.querySelector('[data-admin-time-title]');
+    const hoursList = form.querySelector('[data-admin-time-hours]');
+    const minutesList = form.querySelector('[data-admin-time-minutes]');
+    const applyTimeButton = form.querySelector('[data-admin-time-apply]');
+    const clearTimeButton = form.querySelector('[data-admin-time-clear]');
     const selectedList = form.querySelector('[data-date-slot-selected]');
     const hiddenTimes = form.querySelector('[data-date-slot-times]');
     const currentSlot = form.querySelector('[data-date-slot-current]');
     const addButton = form.querySelector('[data-date-slot-add]');
     const clearSlotsButton = form.querySelector('[data-date-slot-clear]');
+    const triggerButtons = {
+      start: form.querySelector('[data-admin-time-trigger="start"]'),
+      end: form.querySelector('[data-admin-time-trigger="end"]'),
+    };
+    const valueNodes = {
+      start: form.querySelector('[data-admin-time-value="start"]'),
+      end: form.querySelector('[data-admin-time-value="end"]'),
+    };
 
-    if (!startInput || !endInput || !selectedList || !hiddenTimes || !currentSlot || !addButton) {
+    if (!timePicker || !timePopover || !timeTitle || !hoursList || !minutesList || !selectedList || !hiddenTimes || !currentSlot || !addButton) {
       return;
     }
 
     let loadToken = 0;
+    let activeTimeField = 'start';
+    let draftTime = '';
+    let currentRange = {
+      start: '',
+      end: '',
+    };
 
     const normalizeRangeValue = (value) => {
       const parts = String(value || '').split('-');
@@ -365,6 +390,29 @@
       nextRange,
     ]);
 
+    const availableTimesForField = (field) => {
+      const dayStart = 9 * 60;
+      const dayEnd = 22 * 60 + 30;
+      let minMinutes = field === 'start' ? dayStart : dayStart + 1;
+      let maxMinutes = field === 'start' ? dayEnd - 1 : dayEnd;
+
+      if (field === 'start' && currentRange.end) {
+        maxMinutes = Math.min(maxMinutes, timeToMinutes(currentRange.end) - 1);
+      }
+      if (field === 'end' && currentRange.start) {
+        minMinutes = Math.max(minMinutes, timeToMinutes(currentRange.start) + 1);
+      }
+      if (!Number.isFinite(minMinutes) || !Number.isFinite(maxMinutes) || minMinutes > maxMinutes) {
+        return [];
+      }
+
+      const values = [];
+      for (let value = minMinutes; value <= maxMinutes; value += 1) {
+        values.push(minutesToAdminTime(value));
+      }
+      return values;
+    };
+
     const validateCurrentRange = (start, end) => {
       if (!parseTimeParts(start) || !parseTimeParts(end)) {
         return 'Выберите корректное время';
@@ -386,13 +434,150 @@
 
     let selectedRanges = normalizeSelectedRanges(hiddenTimes.value.split('\n'));
 
+    const syncTimeTrigger = (field) => {
+      const valueNode = valueNodes[field];
+      const trigger = triggerButtons[field];
+      if (!valueNode || !trigger) {
+        return;
+      }
+      const emptyLabel = valueNode.dataset.emptyLabel || 'Выберите время';
+      valueNode.textContent = currentRange[field] || emptyLabel;
+      trigger.classList.toggle('is-filled', Boolean(currentRange[field]));
+    };
+
+    const closeTimePopover = () => {
+      closeAdminPopover(timePopover);
+      Object.values(triggerButtons).forEach((button) => {
+        button?.setAttribute('aria-expanded', 'false');
+      });
+    };
+
+    const getValidTimes = (field) => availableTimesForField(field);
+
+    const ensureDraftTime = () => {
+      const validTimes = getValidTimes(activeTimeField);
+      if (!validTimes.length) {
+        draftTime = '';
+        return;
+      }
+      if (!validTimes.includes(draftTime)) {
+        draftTime = currentRange[activeTimeField] && validTimes.includes(currentRange[activeTimeField])
+          ? currentRange[activeTimeField]
+          : validTimes[0];
+      }
+    };
+
+    const renderTimePopover = () => {
+      ensureDraftTime();
+      const validTimes = getValidTimes(activeTimeField);
+      const parts = parseTimeParts(draftTime) || parseTimeParts(validTimes[0]);
+      if (!parts || !validTimes.length) {
+        timeTitle.textContent = activeTimeField === 'start' ? 'Выберите время начала' : 'Выберите время окончания';
+        hoursList.innerHTML = '';
+        minutesList.innerHTML = '';
+        return;
+      }
+
+      const hours = Array.from(new Set(validTimes.map((value) => value.slice(0, 2))));
+      let selectedHour = parts.hour;
+      if (!hours.includes(selectedHour)) {
+        selectedHour = hours[0];
+      }
+
+      const minutes = validTimes
+        .filter((value) => value.startsWith(`${selectedHour}:`))
+        .map((value) => value.slice(3));
+
+      let selectedMinute = parts.minute;
+      if (!minutes.includes(selectedMinute)) {
+        selectedMinute = minutes[0];
+      }
+
+      draftTime = `${selectedHour}:${selectedMinute}`;
+      timeTitle.textContent = activeTimeField === 'start' ? 'Выберите время начала' : 'Выберите время окончания';
+      hoursList.innerHTML = '';
+      minutesList.innerHTML = '';
+
+      hours.forEach((hour) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'admin-time-option';
+        button.textContent = hour;
+        if (hour === selectedHour) {
+          button.classList.add('is-selected');
+        }
+        button.addEventListener('click', () => {
+          const nextMinutes = validTimes
+            .filter((value) => value.startsWith(`${hour}:`))
+            .map((value) => value.slice(3));
+          draftTime = `${hour}:${nextMinutes.includes(selectedMinute) ? selectedMinute : nextMinutes[0]}`;
+          renderTimePopover();
+        });
+        hoursList.appendChild(button);
+      });
+
+      minutes.forEach((minute) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'admin-time-option';
+        button.textContent = minute;
+        if (minute === selectedMinute) {
+          button.classList.add('is-selected');
+        }
+        button.addEventListener('click', () => {
+          draftTime = `${selectedHour}:${minute}`;
+          applyTimeValue(activeTimeField, draftTime);
+        });
+        minutesList.appendChild(button);
+      });
+    };
+
+    const applyTimeValue = (field, value, { closePopoverOnApply = true } = {}) => {
+      const validTimes = getValidTimes(field);
+      if (!value || !validTimes.includes(value)) {
+        syncCurrentSlot('Выберите корректное время');
+        if (closePopoverOnApply) {
+          closeTimePopover();
+        }
+        return false;
+      }
+
+      currentRange = {
+        ...currentRange,
+        [field]: value,
+      };
+      draftTime = value;
+      syncTimeTrigger('start');
+      syncTimeTrigger('end');
+      syncCurrentSlot();
+
+      if (closePopoverOnApply) {
+        closeTimePopover();
+      }
+
+      return true;
+    };
+
+    const applyDraftTime = ({ closePopoverOnApply = true } = {}) => applyTimeValue(activeTimeField, draftTime, { closePopoverOnApply });
+
+    const openTimePopover = (field) => {
+      activeTimeField = field;
+      draftTime = currentRange[field] || getValidTimes(field)[0] || '';
+      renderTimePopover();
+      announceAdminPopoverOpen(timePicker);
+      openAdminPopover(timePopover);
+      Object.entries(triggerButtons).forEach(([name, button]) => {
+        button?.setAttribute('aria-expanded', name === field ? 'true' : 'false');
+      });
+    };
+
     const syncCurrentSlot = (message = '') => {
       if (message) {
         currentSlot.textContent = message;
         return;
       }
-      if (startInput.value && endInput.value) {
-        currentSlot.textContent = `Текущий диапазон: ${startInput.value}-${endInput.value}`;
+      if (currentRange.start && currentRange.end) {
+        currentSlot.textContent = `Текущий диапазон: ${currentRange.start}-${currentRange.end}`;
         return;
       }
       currentSlot.textContent = 'Сначала выберите диапазон времени';
@@ -431,13 +616,15 @@
       });
     };
 
-    const resetInputs = () => {
-      startInput.value = '';
-      endInput.value = '';
+    const resetCurrentRange = () => {
+      currentRange = { start: '', end: '' };
+      draftTime = '';
+      syncTimeTrigger('start');
+      syncTimeTrigger('end');
     };
 
     const loadDateSlots = async (date) => {
-      resetInputs();
+      resetCurrentRange();
 
       if (!dateInput) {
         renderSelected();
@@ -487,19 +674,46 @@
       }
     };
 
-    startInput.addEventListener('input', () => syncCurrentSlot());
-    endInput.addEventListener('input', () => syncCurrentSlot());
+    triggerButtons.start?.addEventListener('click', () => {
+      if (isAdminPopoverOpen(timePopover) && activeTimeField === 'start') {
+        closeTimePopover();
+        return;
+      }
+      openTimePopover('start');
+    });
+
+    triggerButtons.end?.addEventListener('click', () => {
+      if (isAdminPopoverOpen(timePopover) && activeTimeField === 'end') {
+        closeTimePopover();
+        return;
+      }
+      openTimePopover('end');
+    });
+
+    applyTimeButton?.addEventListener('click', () => {
+      applyDraftTime();
+    });
+
+    clearTimeButton?.addEventListener('click', () => {
+      currentRange = {
+        ...currentRange,
+        [activeTimeField]: '',
+      };
+      draftTime = '';
+      syncTimeTrigger('start');
+      syncTimeTrigger('end');
+      syncCurrentSlot();
+      closeTimePopover();
+    });
 
     addButton.addEventListener('click', () => {
-      const start = startInput.value;
-      const end = endInput.value;
-      const validationMessage = validateCurrentRange(start, end);
+      const validationMessage = validateCurrentRange(currentRange.start, currentRange.end);
       if (validationMessage) {
         syncCurrentSlot(validationMessage);
         return;
       }
 
-      const nextRange = { start, end };
+      const nextRange = { ...currentRange };
       if (selectedRanges.some((range) => rangeKey(range) === rangeKey(nextRange))) {
         syncCurrentSlot(`Этот диапазон уже добавлен: ${rangeKey(nextRange)}`);
         return;
@@ -508,7 +722,8 @@
       const removedRanges = selectedRanges.filter((range) => rangesOverlap(range, nextRange));
       selectedRanges = replaceOverlappingRanges(selectedRanges, nextRange);
       renderSelected();
-      resetInputs();
+      resetCurrentRange();
+      closeTimePopover();
       if (removedRanges.length > 0) {
         syncCurrentSlot(`Добавлено: ${rangeKey(nextRange)}. Пересекающиеся диапазоны на эту дату обновлены.`);
         return;
@@ -538,7 +753,26 @@
       }
     });
 
-    resetInputs();
+    document.addEventListener('click', (event) => {
+      if (!eventIncludesNode(event, timePicker)) {
+        closeTimePopover();
+      }
+    });
+
+    document.addEventListener('admin-popover-open', (event) => {
+      if (event.detail?.target !== timePicker) {
+        closeTimePopover();
+      }
+    });
+
+    timePicker.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        closeTimePopover();
+      }
+    });
+
+    timePopover.setAttribute('aria-hidden', 'true');
+    resetCurrentRange();
     renderSelected();
     syncCurrentSlot();
 
