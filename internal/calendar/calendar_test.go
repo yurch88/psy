@@ -367,6 +367,50 @@ func TestOneMonthAheadExclusiveClampsToEndOfNextMonth(t *testing.T) {
 	}
 }
 
+func TestReplaceWeeklyScheduleAcceptsDotSeparatedTimes(t *testing.T) {
+	location, err := time.LoadLocation("Europe/Moscow")
+	if err != nil {
+		t.Fatalf("load location: %v", err)
+	}
+
+	tempDir := t.TempDir()
+	service, err := NewService("Europe/Moscow", filepath.Join(tempDir, "bookings.jsonl"), filepath.Join(tempDir, "slot-rules.json"))
+	if err != nil {
+		t.Fatalf("new service: %v", err)
+	}
+
+	service.now = func() time.Time {
+		return time.Date(2026, time.April, 27, 8, 0, 0, 0, location)
+	}
+
+	err = service.ReplaceWeeklySchedule(context.Background(), []WeeklyScheduleDay{
+		{Day: 1, StartTimes: []string{"9.00", "18.00"}},
+	})
+	if err != nil {
+		t.Fatalf("replace weekly schedule: %v", err)
+	}
+
+	schedule, err := service.WeeklySchedule()
+	if err != nil {
+		t.Fatalf("weekly schedule: %v", err)
+	}
+
+	var monday WeeklyScheduleDay
+	for _, day := range schedule {
+		if day.Day == 1 {
+			monday = day
+			break
+		}
+	}
+
+	if len(monday.StartTimes) != 2 {
+		t.Fatalf("expected 2 monday times, got %+v", monday.StartTimes)
+	}
+	if monday.StartTimes[0] != "09:00" || monday.StartTimes[1] != "18:00" {
+		t.Fatalf("expected normalized monday times, got %+v", monday.StartTimes)
+	}
+}
+
 func containsSlot(slots []Slot, target string) bool {
 	for _, slot := range slots {
 		if slot.ID == target {

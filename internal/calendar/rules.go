@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -177,17 +178,22 @@ func normalizeSlotRuleInput(input SlotRuleInput) (SlotRuleInput, error) {
 	seenTimes := make(map[string]bool)
 	for _, value := range input.StartTimes {
 		value = strings.TrimSpace(value)
-		if value == "" || seenTimes[value] {
+		if value == "" {
 			continue
 		}
-		if _, err := parseClock(value); err != nil {
+
+		normalizedValue, err := normalizeClockValue(value)
+		if err != nil {
 			return SlotRuleInput{}, err
 		}
-		if err := validateTimeWindow(value, input.DurationMinutes); err != nil {
+		if seenTimes[normalizedValue] {
+			continue
+		}
+		if err := validateTimeWindow(normalizedValue, input.DurationMinutes); err != nil {
 			return SlotRuleInput{}, err
 		}
-		seenTimes[value] = true
-		startTimes = append(startTimes, value)
+		seenTimes[normalizedValue] = true
+		startTimes = append(startTimes, normalizedValue)
 	}
 	switch input.Scope {
 	case SlotRuleScopeWeekly:
@@ -228,11 +234,47 @@ func normalizeSlotRuleInput(input SlotRuleInput) (SlotRuleInput, error) {
 }
 
 func parseClock(value string) (int, error) {
-	parsed, err := time.Parse("15:04", value)
+	normalized, err := normalizeClockValue(value)
 	if err != nil {
 		return 0, fmt.Errorf("invalid time %q", value)
 	}
-	return parsed.Hour()*60 + parsed.Minute(), nil
+
+	parts := strings.Split(normalized, ":")
+	hour, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, fmt.Errorf("invalid time %q", value)
+	}
+	minute, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, fmt.Errorf("invalid time %q", value)
+	}
+
+	return hour*60 + minute, nil
+}
+
+func normalizeClockValue(value string) (string, error) {
+	value = strings.TrimSpace(value)
+	value = strings.ReplaceAll(value, ".", ":")
+	value = strings.ReplaceAll(value, ",", ":")
+
+	parts := strings.Split(value, ":")
+	if len(parts) != 2 {
+		return "", fmt.Errorf("invalid time %q", value)
+	}
+
+	hour, err := strconv.Atoi(strings.TrimSpace(parts[0]))
+	if err != nil {
+		return "", fmt.Errorf("invalid time %q", value)
+	}
+	minute, err := strconv.Atoi(strings.TrimSpace(parts[1]))
+	if err != nil {
+		return "", fmt.Errorf("invalid time %q", value)
+	}
+	if hour < 0 || hour > 23 || minute < 0 || minute > 59 {
+		return "", fmt.Errorf("invalid time %q", value)
+	}
+
+	return fmt.Sprintf("%02d:%02d", hour, minute), nil
 }
 
 func validateTimeWindow(start string, durationMinutes int) error {
